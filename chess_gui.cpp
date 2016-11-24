@@ -168,6 +168,9 @@ bool Board::enter_move(std::string move) {
     }
 }
 
+
+/** TODO: scrap this and make it a FSM
+ */
 Move Board::parse_normal_move(std::string move) {
     Move parsed_move;
     int i = 1;
@@ -175,8 +178,8 @@ Move Board::parse_normal_move(std::string move) {
     parsed_move.to_i = c - '1';
 
     i++;
-
     c = move.at(move.length() - i);
+
     if (c >= 'a' && c <= 'h') {
         parsed_move.to_j = c - 'a';
     }
@@ -185,14 +188,53 @@ Move Board::parse_normal_move(std::string move) {
     }
 
     i++;
+    c = move.at(move.length() - i);
 
-    if (move.at(move.length() - i) == 'x') {
+    if (c == 'x') {
         i++;
+        c = move.at(move.length() - i);
         parsed_move.capture = true;
     }
     else {
         parsed_move.capture = false;
     }
+
+    if (i > move.length && !parsed_move.capture) {
+        verify_pawn_move(parsed_move);
+    }
+    else if (i > move.length && parsed_move.capture) {
+        throw std::invalid_argument("invalid notation");
+    }
+
+    if (c >= 'a' && c <= 'h' &&
+        i == move.length() && parsed_move.capture) {
+        verify_pawn_capture(parsed_move);
+    }
+    else if (i == move.length() && c == 'R') {
+       verify_rook_move(parsed_move);
+    }
+    else if (i == move.length() && c == 'N') {
+       verify_knight_move(parsed_move);
+    }
+    else if (i == move.length() && c == 'B') {
+       verify_bishop_move(parsed_move);
+    }
+    else if (i == move.length() && c == 'Q') {
+       verify_queen_move(parsed_move);
+    }
+    else if (i == move.length() && c == 'K') {
+       verify_king_move(parsed_move);
+    }
+    else if (i != move.length() && c >= 'a' && c <= 'h') {}
+
+
+
+
+    
+
+
+
+    
 
 }
 
