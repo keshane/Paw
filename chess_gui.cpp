@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <iostream>
 #include <locale>
+#include <stdexcept>
 
 void DIE(char *message);
 
@@ -31,6 +32,10 @@ typedef struct Move {
     int to_i;
     int to_j;
 
+    // these two last for alignment purposes
+    // but I guess I could also make the above
+    // uint8_t instead of ints? TODO
+    char piece;
     bool capture;
 } Move;
 
@@ -44,6 +49,7 @@ class Board {
         void print_board();
         bool enter_move(std::string move);
         Move parse_normal_move(std::string move);
+        Move parse_special_move(std::string move);
 };
 
 Board::Board() {
@@ -161,81 +167,160 @@ void Board::print_board() {
 
 bool Board::enter_move(std::string move) {
     if (move.back() >= '1' && move.back() <= '8') {
-        parse_normal_move(move);
+        try {
+            parse_normal_move(move);
+        }
+        catch (std::invalid_argument& e) {
+            std::cout << e.what() << std::endl;
+        }
+
     }
     else {
         parse_special_move(move);
     }
 }
 
+Move Board::parse_special_move(std::string move) {
+    Move parsed_move;
+    return parsed_move;
+}
 
-/** TODO: scrap this and make it a FSM
- */
 Move Board::parse_normal_move(std::string move) {
     Move parsed_move;
-    int i = 1;
-    char& c = move.at(move.length() - i);
-    parsed_move.to_i = c - '1';
 
-    i++;
-    c = move.at(move.length() - i);
+    int state;
+    const int to_file = 1, to_rank = 2, from_file = 3, capture = 4, from_rank = 5, piece = 6;
 
-    if (c >= 'a' && c <= 'h') {
-        parsed_move.to_j = c - 'a';
+    std::string::const_reverse_iterator it = move.crbegin();
+
+    state = 0;
+    while (it != move.crend()) {
+        switch (state) {
+            case 0: 
+                if (*it >= '1' && *it <= '8') {
+                    state = to_rank;
+                }
+                else {
+                    throw std::invalid_argument("invalid notation");
+                }
+                break;
+
+            case to_rank:
+                parsed_move.to_i = *it - '0';
+
+                it++;
+                if (*it >= 'a' && *it <= 'h') {
+                    state = to_file;
+                }
+                else {
+                    throw std::invalid_argument("invalid notation");
+                }
+                break;
+
+            case to_file:
+                parsed_move.to_j = *it - 'a';
+
+                it++;
+                /**
+                 * Needing to set
+                 * parsed_move.capture = [true | false] virtually 
+                 * doubles the number of following states, but
+                 * practically we can just have parsed_move.capture
+                 * differentiate between otherwise identical states
+                 */
+                if (*it == 'x') {
+                    parsed_move.capture = true;
+                    state = capture;
+                }
+                else if (*it >= '1' && *it <= '8') {
+                    parsed_move.capture = false;
+                    state = from_rank;
+                }
+                else if (*it >= 'a' && *it <= 'h') {
+                    parsed_move.capture = false;
+                    state = from_file;
+                }
+                else if (*it == 'R' || *it == 'N' ||
+                         *it == 'B' || *it == 'Q' ||
+                         *it == 'K') {
+                    parsed_move.capture = false;
+                    state = piece;
+                }
+                else {
+                    throw std::invalid_argument("invalid notation");
+                }
+ 
+                break;
+
+            case capture:
+                /** 
+                 * This case is essentially a repeat of the
+                 * else-if statements in case to_file. This
+                 * 'capture' state is necessary to make sure
+                 * we haven't reached the beginning of the string
+                 * yet.
+                 */
+                it++;
+                if (*it >= '1' && *it <= '8') {
+                    state = from_rank;
+                }
+                else if (*it >= 'a' && *it <= 'h') {
+                    state = from_file;
+                }
+                else if (*it == 'R' || *it == 'N' ||
+                         *it == 'B' || *it == 'Q' ||
+                         *it == 'K') {
+                    state = piece;
+                }
+                else {
+                    throw std::invalid_argument("invalid notation");
+                }
+                break;
+
+            case from_rank:
+                parsed_move.from_i = *it - '0';
+
+                it++;
+                if (*it >= 'a' && *it <= 'h') {
+                    state = from_file;
+                }
+                else if (*it == 'R' || *it == 'N' ||
+                         *it == 'B' || *it == 'Q' ||
+                         *it == 'K') {
+                    state = piece;
+                }
+                else {
+                    throw std::invalid_argument("invalid notation");
+                }
+                break;
+
+            case from_file:
+                parsed_move.from_j = *it - 'a';
+
+                it++;
+                if (*it == 'R' || *it == 'N' ||
+                    *it == 'B' || *it == 'Q' ||
+                    *it == 'K') {
+                    state = piece;
+                }
+                else {
+                    throw std::invalid_argument("invalid notation");
+                }
+                break;
+
+            case piece:
+                parsed_move.piece = *it;
+
+                it++;
+                break;
+
+            default:
+                throw std::invalid_argument("unknown state when parsing");
+                break;
+        }
     }
-    else {
-        throw std::invalid_argument("invalid notation");
-    }
 
-    i++;
-    c = move.at(move.length() - i);
-
-    if (c == 'x') {
-        i++;
-        c = move.at(move.length() - i);
-        parsed_move.capture = true;
-    }
-    else {
-        parsed_move.capture = false;
-    }
-
-    if (i > move.length && !parsed_move.capture) {
-        verify_pawn_move(parsed_move);
-    }
-    else if (i > move.length && parsed_move.capture) {
-        throw std::invalid_argument("invalid notation");
-    }
-
-    if (c >= 'a' && c <= 'h' &&
-        i == move.length() && parsed_move.capture) {
-        verify_pawn_capture(parsed_move);
-    }
-    else if (i == move.length() && c == 'R') {
-       verify_rook_move(parsed_move);
-    }
-    else if (i == move.length() && c == 'N') {
-       verify_knight_move(parsed_move);
-    }
-    else if (i == move.length() && c == 'B') {
-       verify_bishop_move(parsed_move);
-    }
-    else if (i == move.length() && c == 'Q') {
-       verify_queen_move(parsed_move);
-    }
-    else if (i == move.length() && c == 'K') {
-       verify_king_move(parsed_move);
-    }
-    else if (i != move.length() && c >= 'a' && c <= 'h') {}
-
-
-
-
-    
-
-
-
-    
-
+    return parsed_move;
 }
 
 
@@ -250,6 +335,8 @@ void DIE(char const *message) {
 int main(int argc, char *argv[]) {
     Board board;
     board.print_board();
+   // board.parse_normal_move("NFxe4");
+    board.enter_move("NFxe4");
 }
 
 
