@@ -1,12 +1,11 @@
 /**
- * Takes input in FEN
  *
- * I am reinventing the wheel for exercise.
  */
 #include <cstdint>
 #include <iostream>
 #include <locale>
 #include <stdexcept>
+#include <string>
 
 void DIE(char *message);
 
@@ -50,6 +49,7 @@ class Board {
         bool enter_move(std::string move);
         Move parse_normal_move(std::string move);
         Move parse_special_move(std::string move);
+        void execute_normal_move(Move move);
 };
 
 Board::Board() {
@@ -84,6 +84,8 @@ Board::Board() {
             board[i][j] = 0;
         }
     }
+
+    white_move = true;
 }
 
 void Board::print_board() {
@@ -162,13 +164,21 @@ void Board::print_board() {
     std::cout << "\u2500\u2500\u2500\u2518\n";
 
     std::cout << "              WHITE\n";
+
+    if (white_move) {
+        std::cout << "WHITE TO MOVE\n";
+    }
+    else {
+        std::cout << "BLACK TO MOVE\n";
+    }
 }
 
 
 bool Board::enter_move(std::string move) {
+    Move parsed_move;
     if (move.back() >= '1' && move.back() <= '8') {
         try {
-            parse_normal_move(move);
+            parsed_move = parse_normal_move(move);
         }
         catch (std::invalid_argument& e) {
             std::cout << e.what() << std::endl;
@@ -178,6 +188,62 @@ bool Board::enter_move(std::string move) {
     else {
         parse_special_move(move);
     }
+
+    // TODO: verify move
+    // complete_move = verify_normal_move(parsed_move);
+
+    if (white_move) {
+        switch (parsed_move.piece) {
+            case 'P':
+                parsed_move.piece = WHITE_PAWN;
+                break;
+            case 'R':
+                parsed_move.piece = WHITE_ROOK;
+                break;
+            case 'N':
+                parsed_move.piece = WHITE_KNIGHT;
+                break;
+            case 'B':
+                parsed_move.piece = WHITE_BISHOP;
+                break;
+            case 'Q':
+                parsed_move.piece = WHITE_QUEEN;
+                break;
+            case 'K':
+                parsed_move.piece = WHITE_KING;
+                break;
+        }
+    }
+    else {
+        switch (parsed_move.piece) {
+            case 'P':
+                parsed_move.piece = BLACK_PAWN;
+                break;
+            case 'R':
+                parsed_move.piece = BLACK_ROOK;
+                break;
+            case 'N':
+                parsed_move.piece = BLACK_KNIGHT;
+                break;
+            case 'B':
+                parsed_move.piece = BLACK_BISHOP;
+                break;
+            case 'Q':
+                parsed_move.piece = BLACK_QUEEN;
+                break;
+            case 'K':
+                parsed_move.piece = BLACK_KING;
+                break;
+        }
+    }
+    execute_normal_move(parsed_move);
+
+    white_move = !white_move;
+}
+
+void Board::execute_normal_move(Move move) {
+    board[move.to_i][move.to_j] = board[move.from_i][move.from_j];
+    board[move.from_i][move.from_j] = 0;
 }
 
 Move Board::parse_special_move(std::string move) {
@@ -185,6 +251,12 @@ Move Board::parse_special_move(std::string move) {
     return parsed_move;
 }
 
+/**
+ * @param move a string of the form
+ *             [RNBQK]?[a-h]?[1-8]?x?[a-h][1-8]
+ *
+ * @return a Move with the appropriate variables filled out
+ */
 Move Board::parse_normal_move(std::string move) {
     Move parsed_move;
 
@@ -206,7 +278,7 @@ Move Board::parse_normal_move(std::string move) {
                 break;
 
             case to_rank:
-                parsed_move.to_i = *it - '0';
+                parsed_move.to_i = *it - '1';
 
                 it++;
                 if (*it >= 'a' && *it <= 'h') {
@@ -256,7 +328,7 @@ Move Board::parse_normal_move(std::string move) {
                 /** 
                  * This case is essentially a repeat of the
                  * else-if statements in case to_file. This
-                 * 'capture' state is necessary to make sure
+                 * 'capture' case is necessary to make sure
                  * we haven't reached the beginning of the string
                  * yet.
                  */
@@ -278,7 +350,7 @@ Move Board::parse_normal_move(std::string move) {
                 break;
 
             case from_rank:
-                parsed_move.from_i = *it - '0';
+                parsed_move.from_i = *it - '1';
 
                 it++;
                 if (*it >= 'a' && *it <= 'h') {
@@ -302,6 +374,9 @@ Move Board::parse_normal_move(std::string move) {
                     *it == 'B' || *it == 'Q' ||
                     *it == 'K') {
                     state = piece;
+                }
+                else if (it == move.crend()) {
+                    parsed_move.piece = 'P';
                 }
                 else {
                     throw std::invalid_argument("invalid notation");
@@ -335,8 +410,13 @@ void DIE(char const *message) {
 int main(int argc, char *argv[]) {
     Board board;
     board.print_board();
-   // board.parse_normal_move("NFxe4");
-    board.enter_move("NFxe4");
+    std::string move;
+    while(getline(std::cin, move)) {
+        if (move.empty() || move == "\n")
+            continue;
+        board.enter_move(move);
+        board.print_board();
+    }
 }
 
 
