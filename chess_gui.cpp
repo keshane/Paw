@@ -6,53 +6,16 @@
 #include <locale>
 #include <stdexcept>
 #include <string>
+#include <vector>
+#include "chess_gui.h"
 
 void DIE(char *message);
 
-enum Piece : uint8_t {
-    WHITE_PAWN = 1,
-    WHITE_ROOK = 2,
-    WHITE_KNIGHT = 3,
-    WHITE_BISHOP = 4,
-    WHITE_QUEEN = 5,
-    WHITE_KING = 6,
-    BLACK_PAWN = 7,
-    BLACK_ROOK = 8,
-    BLACK_KNIGHT = 9,
-    BLACK_BISHOP = 10,
-    BLACK_QUEEN = 11,
-    BLACK_KING = 12
-};
-
-typedef struct Move {
-    int from_i;
-    int from_j;
-
-    int to_i;
-    int to_j;
-
-    // these two last for alignment purposes
-    // but I guess I could also make the above
-    // uint8_t instead of ints? TODO
-    char piece;
-    bool capture;
-} Move;
-
  
-class Board {
-    private:
-        uint8_t board[8][8];
-        bool white_move;
-    public:
-        Board();
-        void print_board();
-        bool enter_move(std::string move);
-        Move parse_normal_move(std::string move);
-        Move parse_special_move(std::string move);
-        void execute_normal_move(Move move);
-};
+
 
 Board::Board() {
+    // Fill in white pieces
     board[0][0] = WHITE_ROOK;
     board[0][7] = WHITE_ROOK;
     board[0][1] = WHITE_KNIGHT;
@@ -62,10 +25,21 @@ Board::Board() {
     board[0][3] = WHITE_QUEEN;
     board[0][4] = WHITE_KING;
 
-    for (int i = 0; i < 8; i++) {
+    piece_locations[WHITE_ROOK].push_back({0,0});
+    piece_locations[WHITE_ROOK].push_back({0,7});
+    piece_locations[WHITE_KNIGHT].push_back({0,1});
+    piece_locations[WHITE_KNIGHT].push_back({0,6});
+    piece_locations[WHITE_BISHOP].push_back({0,2});
+    piece_locations[WHITE_BISHOP].push_back({0,5});
+    piece_locations[WHITE_QUEEN].push_back({0,3});
+    piece_locations[WHITE_KING].push_back({0,4});
+
+    for (int8_t i = 0; i < 8; i++) {
         board[1][i] = WHITE_PAWN;
+        piece_locations[WHITE_PAWN].push_back({1,i});
     }
 
+    // Fill in black pieces
     board[7][0] = BLACK_ROOK;
     board[7][7] = BLACK_ROOK;
     board[7][1] = BLACK_KNIGHT;
@@ -75,8 +49,17 @@ Board::Board() {
     board[7][3] = BLACK_QUEEN;
     board[7][4] = BLACK_KING;
 
-    for (int i = 0; i < 8; i++) {
+    piece_locations[BLACK_ROOK].push_back({7,0});
+    piece_locations[BLACK_ROOK].push_back({7,7});
+    piece_locations[BLACK_KNIGHT].push_back({7,1});
+    piece_locations[BLACK_KNIGHT].push_back({7,6});
+    piece_locations[BLACK_BISHOP].push_back({7,2});
+    piece_locations[BLACK_BISHOP].push_back({7,5});
+    piece_locations[BLACK_QUEEN].push_back({7,3});
+    piece_locations[BLACK_KING].push_back({7,4});
+    for (int8_t i = 0; i < 8; i++) {
         board[6][i] = BLACK_PAWN;
+        piece_locations[BLACK_PAWN].push_back({6,i});
     }
 
     for (int i = 2; i < 6; i++) {
@@ -193,7 +176,7 @@ bool Board::enter_move(std::string move) {
     // complete_move = verify_normal_move(parsed_move);
 
     if (white_move) {
-        switch (parsed_move.piece) {
+        switch (parsed_move.piece_name) {
             case 'P':
                 parsed_move.piece = WHITE_PAWN;
                 break;
@@ -215,7 +198,7 @@ bool Board::enter_move(std::string move) {
         }
     }
     else {
-        switch (parsed_move.piece) {
+        switch (parsed_move.piece_name) {
             case 'P':
                 parsed_move.piece = BLACK_PAWN;
                 break;
@@ -239,6 +222,7 @@ bool Board::enter_move(std::string move) {
     execute_normal_move(parsed_move);
 
     white_move = !white_move;
+    return true;
 }
 
 void Board::execute_normal_move(Move move) {
@@ -250,6 +234,38 @@ Move Board::parse_special_move(std::string move) {
     Move parsed_move;
     return parsed_move;
 }
+
+Move Board::verify_normal_move(Move move) {
+    std::vector<Coordinate>::iterator it = piece_locations[move.piece].begin();
+    switch (move.piece) {
+        case WHITE_ROOK:
+        case BLACK_ROOK:
+            for (; it != piece_locations[move.piece].end(); it++) {
+                if (move.from_j < 0 && (*it).i == move.to_i) {
+                    for (int j = std::min((*it).j, move.to_j) + 1;
+                         j < std::max((*it).j, move.to_j);
+                         j++) {
+                        if (board[move.to_i][j] > 0) {
+                            throw std::invalid_argument("Rook cannot move there - placeholder exception");
+                        }
+                    }
+
+                    move.from_i = (*it).i;
+                    move.from_j = (*it).j;
+                    break;
+
+                }
+            }
+            break;
+            
+        default:
+            break;
+    }
+
+    return move;
+}
+
+
 
 /**
  * @param move a string of the form
@@ -376,7 +392,7 @@ Move Board::parse_normal_move(std::string move) {
                     state = piece;
                 }
                 else if (it == move.crend()) {
-                    parsed_move.piece = 'P';
+                    parsed_move.piece_name = 'P';
                 }
                 else {
                     throw std::invalid_argument("invalid notation");
@@ -384,9 +400,11 @@ Move Board::parse_normal_move(std::string move) {
                 break;
 
             case piece:
-                parsed_move.piece = *it;
+                parsed_move.piece_name = *it;
 
                 it++;
+
+                state = 100;
                 break;
 
             default:
@@ -414,9 +432,12 @@ int main(int argc, char *argv[]) {
     while(getline(std::cin, move)) {
         if (move.empty() || move == "\n")
             continue;
+        if (move == "exit")
+            break;
         board.enter_move(move);
         board.print_board();
     }
+    std::cout << "Thank you for playing today\n";
 }
 
 
