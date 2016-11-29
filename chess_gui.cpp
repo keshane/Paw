@@ -313,17 +313,20 @@ Move Board::verify_bishop_move(Move move) {
     if (move.from_i < 0 && move.from_j < 0) {
         for (; it != piece_locations[move.piece].end(); it++) {
             if (std::abs((*it).i - move.to_i) == std::abs((*it).j - move.to_j)) {
-                if (verified) {
+                bool is_clear = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
+
+                // Checks to see if there was another piece that could have made this move
+                if (is_clear && verified) {
                     throw std::invalid_argument("Imprecise notation - placeholder exception");
                 }
 
-                verified = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
-                if (verified) {
+                if (is_clear) {
                     move.from_i = (*it).i;
                     move.from_j = (*it).j;
+
+                    verified = true;
                 }
             }
-
         }
     }
     // rank specified
@@ -331,17 +334,19 @@ Move Board::verify_bishop_move(Move move) {
         for (; it != piece_locations[move.piece].end(); it++) {
             if ((*it).i == move.from_i &&
                 std::abs((*it).i - move.to_i) == std::abs((*it).j - move.to_j)) {
+                bool is_clear = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
 
-                if (verified) {
+                // Checks to see if there was another piece that could have made this move
+                if (is_clear && verified) {
                     throw std::invalid_argument("Imprecise notation - placeholder exception");
                 }
 
-                verified = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
-                if (verified) {
+                if (is_clear) {
                     move.from_i = (*it).i;
                     move.from_j = (*it).j;
-                }
 
+                    verified = true;
+                }
             }
         }
     }
@@ -350,17 +355,19 @@ Move Board::verify_bishop_move(Move move) {
         for (; it != piece_locations[move.piece].end(); it++) {
             if ((*it).j == move.from_j &&
                 std::abs((*it).i - move.to_i) == std::abs((*it).j - move.to_j)) {
+                bool is_clear = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
 
-                if (verified) {
+                // Checks to see if there was another piece that could have made this move
+                if (is_clear && verified) {
                     throw std::invalid_argument("Imprecise notation - placeholder exception");
                 }
 
-                verified = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
-                if (verified) {
+                if (is_clear) {
                     move.from_i = (*it).i;
                     move.from_j = (*it).j;
-                }
 
+                    verified = true;
+                }
             }
         }
     }
@@ -369,18 +376,20 @@ Move Board::verify_bishop_move(Move move) {
             if ((*it).i == move.from_i &&
                 (*it).j == move.from_j && 
                 std::abs((*it).i - move.to_i) == std::abs((*it).j - move.to_j)) {
+                bool is_clear = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
 
-                if (verified) {
+                // Checks to see if there was another piece that could have made this move
+                if (is_clear && verified) {
                     throw std::invalid_argument("Imprecise notation - placeholder exception");
                 }
 
-                verified = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
-                if (verified) {
+                if (is_clear) {
                     move.from_i = (*it).i;
                     move.from_j = (*it).j;
+
+                    verified = true;
                 }
             }
-            
         }
     }
 
@@ -391,111 +400,137 @@ Move Board::verify_bishop_move(Move move) {
     return move;
 }
 
-// TODO: make separate functions for each piece?
-// TODO: notation is not necessarily imprecise until a clear path has been established - fix this
-Move Board::verify_normal_move(Move move) {
+Move Board::verify_rook_move(Move move) {
     std::vector<Coordinate>::iterator it = piece_locations[move.piece].begin();
     bool verified = false;
+    // if 'from' square isn't specified
+    if (move.from_i < 0 && move.from_j < 0) {
+        // We need to check all pieces in case the notation is imprecise
+        for (; it != piece_locations[move.piece].end(); it++) {
+            // if the rook is on the same rank as the 'to' square...
+            if ((*it).i == move.to_i) {
+                bool is_clear = has_clear_horiz((*it).i, (*it).j, move.to_j);
+
+                if (is_clear && verified) {
+                    throw std::invalid_argument("Imprecise notation - placeholder exception");
+                }
+
+                if (is_clear) {
+                    move.from_i = (*it).i;
+                    move.from_j = (*it).j;
+
+                    verified = true;
+                }
+            }
+            else if ((*it).j == move.to_j) {
+                bool is_clear = has_clear_vert((*it).j, (*it).i, move.to_i);
+
+                if (is_clear && verified) {
+                    throw std::invalid_argument("Imprecise notation - placeholder exception");
+                }
+
+                if (is_clear) {
+                    move.from_i = (*it).i;
+                    move.from_j = (*it).j;
+
+                    verified = true;
+                }
+            }
+
+        }
+        if (!verified) {
+            throw std::invalid_argument("Invalid move");
+        }
+    }
+    else if (move.from_i >= 0 && move.from_j < 0) {
+        for (; it != piece_locations[move.piece].end(); it++) {
+            if ((*it).i == move.from_i) {
+                bool is_clear = has_clear_horiz((*it).i, (*it).j, move.to_j);
+
+                if (is_clear && verified) {
+                    throw std::invalid_argument("Imprecise notation - placeholder exception");
+                }
+
+                if (is_clear) {
+                    move.from_i = (*it).i;
+                    move.from_j = (*it).j;
+
+                    verified = true;
+                }
+            }
+        }
+        if (!verified) {
+            throw std::invalid_argument("Invalid move");
+        }
+    }
+    else if (move.from_i < 0 && move.from_j >= 0) {
+        for (; it != piece_locations[move.piece].end(); it++) {
+            if ((*it).j == move.from_j) {
+                bool is_clear = has_clear_vert((*it).j, (*it).i, move.to_i);
+
+                if (is_clear && verified) {
+                    throw std::invalid_argument("Imprecise notation - placeholder exception");
+                }
+
+                if (is_clear) {
+                    move.from_i = (*it).i;
+                    move.from_j = (*it).j;
+
+                    verified = true;
+                }
+            }
+        }
+        if (!verified) {
+            throw std::invalid_argument("Invalid move");
+        }
+    }
+    else { // both move.from_i and move.from_j were specified
+        for (; it != piece_locations[move.piece].end(); it++) {
+            if ((*it).i == move.from_i && (*it).j == move.from_j) {
+                bool is_clear;
+                if (move.from_i == move.to_i) {
+                    is_clear = has_clear_horiz(move.from_i, move.from_j, move.to_j);
+                }
+                else if (move.from_j == move.to_j) {
+                    is_clear = has_clear_vert(move.from_j, move.from_i, move.to_i);
+                }
+                else {
+                    is_clear = false;
+                }
+
+
+                if (is_clear && verified) {
+                    throw std::invalid_argument("Imprecise notation - placeholder exception");
+                }
+
+                if (is_clear) {
+                    move.from_i = (*it).i;
+                    move.from_j = (*it).j;
+
+                    verified = true;
+                }
+            }
+        }
+    }
+
+    if (!verified) {
+        throw std::invalid_argument("Invalid move");
+    }
+
+    return move;
+}
+ 
+Move Board::verify_normal_move(Move move) {
+    Move verified_move;
     switch (move.piece) {
         case WHITE_ROOK:
         case BLACK_ROOK:
-            // if 'from' square isn't specified
-            if (move.from_i < 0 && move.from_j < 0) {
-                // We need to check all pieces in case the notation is imprecise
-                for (; it != piece_locations[move.piece].end(); it++) {
-                    // if the rook is on the same rank as the 'to' square...
-                    if ((*it).i == move.to_i) {
-                        if (verified) {
-                            throw std::invalid_argument("Imprecise notation - placeholder exception");
-                        }
+            verified_move = verify_rook_move(move);
+            break;
 
-                        verified = has_clear_horiz((*it).i, (*it).j, move.to_j);
-                        if (verified) {
-                            move.from_i = (*it).i;
-                            move.from_j = (*it).j;
-                        }
-                    }
-                    else if ((*it).j == move.to_j) {
-                        if (verified) {
-                            throw std::invalid_argument("Imprecise notation - placeholder exception");
-                        }
-
-                        verified = has_clear_vert((*it).j, (*it).i, move.to_i);
-                        if (verified) {
-                            move.from_i = (*it).i;
-                            move.from_j = (*it).j;
-                        }
-                    }
-
-                }
-                if (!verified) {
-                    throw std::invalid_argument("Invalid move");
-                }
-            }
-            else if (move.from_i >= 0 && move.from_j < 0) {
-                for (; it != piece_locations[move.piece].end(); it++) {
-                    if ((*it).i == move.from_i) {
-                        if (verified) {
-                            throw std::invalid_argument("Imprecise notation - placeholder exception");
-                        }
-
-                        verified = has_clear_horiz((*it).i, (*it).j, move.to_j);
-                        if (verified) {
-                            move.from_i = (*it).i;
-                            move.from_j = (*it).j;
-                        }
-                    }
-                }
-                if (!verified) {
-                    throw std::invalid_argument("Invalid move");
-                }
-            }
-            else if (move.from_i < 0 && move.from_j >= 0) {
-                for (; it != piece_locations[move.piece].end(); it++) {
-                    if ((*it).j == move.from_j) {
-                        if (verified) {
-                            throw std::invalid_argument("Imprecise notation - placeholder exception");
-                        }
-
-                        verified = has_clear_vert((*it).j, (*it).i, move.to_i);
-                        if (verified) {
-                            move.from_i = (*it).i;
-                            move.from_j = (*it).j;
-                        }
-                    }
-                }
-                if (!verified) {
-                    throw std::invalid_argument("Invalid move");
-                }
-            }
-            else { // both move.from_i and move.from_j were specified
-                for (; it != piece_locations[move.piece].end(); it++) {
-                    if ((*it).i == move.from_i && (*it).j == move.from_j) {
-                        if (verified) {
-                            throw std::invalid_argument("Imprecise notation - placeholder exception");
-                        }
-
-                        if (move.from_i == move.to_i) {
-                            verified = has_clear_horiz(move.from_i, move.from_j, move.to_j);
-                        }
-                        else if (move.from_j == move.to_j) {
-                            verified = has_clear_vert(move.from_j, move.from_i, move.to_i);
-                        }
-                        else {
-                            verified = false;
-                        }
-
-                        if (verified) {
-                            move.from_i = (*it).i;
-                            move.from_j = (*it).j;
-                        }
-                    }
-                }
-
-                if (!verified) {
-                    throw std::invalid_argument("Invalid move");
-                }
-            }
+        case WHITE_BISHOP:
+        case BLACK_BISHOP:
+            verified_move = verify_bishop_move(move);
             break;
             
         default:
