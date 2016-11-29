@@ -244,7 +244,7 @@ Move Board::parse_special_move(std::string move) {
  *
  * @return true if there are no blockers between the squares, false otherwise
  */
-bool Board::check_horiz_blockers(int8_t row, int8_t ja, int8_t jb) {
+bool Board::has_clear_horiz(int8_t row, int8_t ja, int8_t jb) {
     // We don't allow pieces to not move
     if (ja == jb) {
         return false;
@@ -266,7 +266,7 @@ bool Board::check_horiz_blockers(int8_t row, int8_t ja, int8_t jb) {
  *
  * @return true if there are no blockers between the squares, false otherwise
  */
-bool Board::check_vert_blockers(int8_t col, int8_t ia, int8_t ib) {
+bool Board::has_clear_vert(int8_t col, int8_t ia, int8_t ib) {
     // We don't allow pieces to move to their current square 
     if (ia == ib) {
         return false;
@@ -279,7 +279,120 @@ bool Board::check_vert_blockers(int8_t col, int8_t ia, int8_t ib) {
     return true;
 }
 
+/**
+ * Check if there are any pieces between board[ia][ja] and board[ib][jb]
+ *
+ * @param ia the row index of the first square
+ * @param ja the col index of the first square
+ * @param ib the row index of the second square
+ * @param jb the col index of the second square
+ *
+ * @return true if there are no blockers between the squares, false otherwise
+ */
+bool Board::has_clear_diag(int8_t ia, int8_t ja, int8_t ib, int8_t jb) {
+    if (ia == ib && ja == jb)
+        return false;
+    int8_t incr_i = (ib - ia) / std::abs(ib - ia);
+    int8_t incr_j = (jb - ja) / std::abs(jb - ja);
+    for (int i = ia + incr_i, j = ja + incr_j;
+         i != ib && j != jb;
+         i += incr_i, j += incr_j) {
+        if (board[i][j] > 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+         
+
+Move Board::verify_bishop_move(Move move) {
+    std::vector<Coordinate>::iterator it = piece_locations[move.piece].begin();
+    bool verified = false;
+    // no from_square specified
+    if (move.from_i < 0 && move.from_j < 0) {
+        for (; it != piece_locations[move.piece].end(); it++) {
+            if (std::abs((*it).i - move.to_i) == std::abs((*it).j - move.to_j)) {
+                if (verified) {
+                    throw std::invalid_argument("Imprecise notation - placeholder exception");
+                }
+
+                verified = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
+                if (verified) {
+                    move.from_i = (*it).i;
+                    move.from_j = (*it).j;
+                }
+            }
+
+        }
+    }
+    // rank specified
+    else if (move.from_i >= 0 && move.from_j < 0) {
+        for (; it != piece_locations[move.piece].end(); it++) {
+            if ((*it).i == move.from_i &&
+                std::abs((*it).i - move.to_i) == std::abs((*it).j - move.to_j)) {
+
+                if (verified) {
+                    throw std::invalid_argument("Imprecise notation - placeholder exception");
+                }
+
+                verified = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
+                if (verified) {
+                    move.from_i = (*it).i;
+                    move.from_j = (*it).j;
+                }
+
+            }
+        }
+    }
+    // file specified
+    else if (move.from_i < 0 && move.from_j >= 0) {
+        for (; it != piece_locations[move.piece].end(); it++) {
+            if ((*it).j == move.from_j &&
+                std::abs((*it).i - move.to_i) == std::abs((*it).j - move.to_j)) {
+
+                if (verified) {
+                    throw std::invalid_argument("Imprecise notation - placeholder exception");
+                }
+
+                verified = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
+                if (verified) {
+                    move.from_i = (*it).i;
+                    move.from_j = (*it).j;
+                }
+
+            }
+        }
+    }
+    else { // both move.from_i and move.from_j were specified
+        for (; it != piece_locations[move.piece].end(); it++) {
+            if ((*it).i == move.from_i &&
+                (*it).j == move.from_j && 
+                std::abs((*it).i - move.to_i) == std::abs((*it).j - move.to_j)) {
+
+                if (verified) {
+                    throw std::invalid_argument("Imprecise notation - placeholder exception");
+                }
+
+                verified = has_clear_diag((*it).i, (*it).j, move.to_i, move.to_j);
+                if (verified) {
+                    move.from_i = (*it).i;
+                    move.from_j = (*it).j;
+                }
+            }
+            
+        }
+    }
+
+    if (!verified) {
+        throw std::invalid_argument("invalid move - placeholder exception");
+    }
+
+    return move;
+}
+
 // TODO: make separate functions for each piece?
+// TODO: notation is not necessarily imprecise until a clear path has been established - fix this
 Move Board::verify_normal_move(Move move) {
     std::vector<Coordinate>::iterator it = piece_locations[move.piece].begin();
     bool verified = false;
@@ -296,7 +409,7 @@ Move Board::verify_normal_move(Move move) {
                             throw std::invalid_argument("Imprecise notation - placeholder exception");
                         }
 
-                        verified = check_horiz_blockers((*it).i, (*it).j, move.to_j);
+                        verified = has_clear_horiz((*it).i, (*it).j, move.to_j);
                         if (verified) {
                             move.from_i = (*it).i;
                             move.from_j = (*it).j;
@@ -307,7 +420,7 @@ Move Board::verify_normal_move(Move move) {
                             throw std::invalid_argument("Imprecise notation - placeholder exception");
                         }
 
-                        verified = check_vert_blockers((*it).j, (*it).i, move.to_i);
+                        verified = has_clear_vert((*it).j, (*it).i, move.to_i);
                         if (verified) {
                             move.from_i = (*it).i;
                             move.from_j = (*it).j;
@@ -326,7 +439,7 @@ Move Board::verify_normal_move(Move move) {
                             throw std::invalid_argument("Imprecise notation - placeholder exception");
                         }
 
-                        verified = check_horiz_blockers((*it).i, (*it).j, move.to_j);
+                        verified = has_clear_horiz((*it).i, (*it).j, move.to_j);
                         if (verified) {
                             move.from_i = (*it).i;
                             move.from_j = (*it).j;
@@ -344,7 +457,7 @@ Move Board::verify_normal_move(Move move) {
                             throw std::invalid_argument("Imprecise notation - placeholder exception");
                         }
 
-                        verified = check_vert_blockers((*it).j, (*it).i, move.to_i);
+                        verified = has_clear_vert((*it).j, (*it).i, move.to_i);
                         if (verified) {
                             move.from_i = (*it).i;
                             move.from_j = (*it).j;
@@ -355,7 +468,7 @@ Move Board::verify_normal_move(Move move) {
                     throw std::invalid_argument("Invalid move");
                 }
             }
-            else {
+            else { // both move.from_i and move.from_j were specified
                 for (; it != piece_locations[move.piece].end(); it++) {
                     if ((*it).i == move.from_i && (*it).j == move.from_j) {
                         if (verified) {
@@ -363,10 +476,10 @@ Move Board::verify_normal_move(Move move) {
                         }
 
                         if (move.from_i == move.to_i) {
-                            verified = check_horiz_blockers(move.from_i, move.from_j, move.to_j);
+                            verified = has_clear_horiz(move.from_i, move.from_j, move.to_j);
                         }
                         else if (move.from_j == move.to_j) {
-                            verified = check_vert_blockers(move.from_j, move.from_i, move.to_i);
+                            verified = has_clear_vert(move.from_j, move.from_i, move.to_i);
                         }
                         else {
                             verified = false;
@@ -395,7 +508,8 @@ Move Board::verify_normal_move(Move move) {
 
 
 /**
- * Emulates a finite state machine to parse the input
+ * Emulates a finite state machine to parse the input string
+ * of algebraic notation from the end to the beginning
  *
  * @param move a string of the form
  *             [RNBQK]?[a-h]?[1-8]?x?[a-h][1-8]

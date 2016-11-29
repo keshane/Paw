@@ -41,8 +41,11 @@ class Board {
         Move parse_special_move(std::string move);
         Move verify_normal_move(Move move);
         void execute_normal_move(Move move);
-        bool check_horiz_blockers(int8_t row, int8_t ja, int8_t jb);
-        bool check_vert_blockers(int8_t col, int8_t ia, int8_t ib);
+        bool has_clear_horiz(int8_t row, int8_t ja, int8_t jb);
+        bool has_clear_vert(int8_t col, int8_t ia, int8_t ib);
+        bool has_clear_diag(int8_t ia, int8_t ja, int8_t ib, int8_t jb);
+        Move verify_rook_move(Move move);
+        Move verify_bishop_move(Move move);
 
         std::vector<Coordinate> piece_locations[NUMBER_OF_PIECES];
         bool dummy;
