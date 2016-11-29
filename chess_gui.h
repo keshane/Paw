@@ -41,6 +41,8 @@ class Board {
         Move parse_special_move(std::string move);
         Move verify_normal_move(Move move);
         void execute_normal_move(Move move);
+        bool check_horiz_blockers(int8_t row, int8_t ja, int8_t jb);
+        bool check_vert_blockers(int8_t col, int8_t ia, int8_t ib);
 
         std::vector<Coordinate> piece_locations[NUMBER_OF_PIECES];
         bool dummy;

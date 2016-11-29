@@ -235,25 +235,152 @@ Move Board::parse_special_move(std::string move) {
     return parsed_move;
 }
 
+/**
+ * Check if there are any pieces between board[row][ja] and board[row][jb]
+ *
+ * @param row the row index
+ * @param ja the column index of the first square
+ * @param jb the column index of the second square
+ *
+ * @return true if there are no blockers between the squares, false otherwise
+ */
+bool Board::check_horiz_blockers(int8_t row, int8_t ja, int8_t jb) {
+    // We don't allow pieces to not move
+    if (ja == jb) {
+        return false;
+    }
+    for (int8_t j = std::min(ja, jb) + 1; j < std::max(ja, jb); j++) {
+        if (board[row][j] > 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Check if there are any pieces between board[ia][col] and board[ib][col]
+ *
+ * @param col the column index
+ * @param ia the row index of the first square
+ * @param ib the row index of the second square
+ *
+ * @return true if there are no blockers between the squares, false otherwise
+ */
+bool Board::check_vert_blockers(int8_t col, int8_t ia, int8_t ib) {
+    // We don't allow pieces to move to their current square 
+    if (ia == ib) {
+        return false;
+    }
+    for (int8_t i = std::min(ia, ib) + 1; i < std::max(ia, ib); i++) {
+        if (board[i][col] > 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// TODO: make separate functions for each piece?
 Move Board::verify_normal_move(Move move) {
     std::vector<Coordinate>::iterator it = piece_locations[move.piece].begin();
+    bool verified = false;
     switch (move.piece) {
         case WHITE_ROOK:
         case BLACK_ROOK:
-            for (; it != piece_locations[move.piece].end(); it++) {
-                if (move.from_j < 0 && (*it).i == move.to_i) {
-                    for (int j = std::min((*it).j, move.to_j) + 1;
-                         j < std::max((*it).j, move.to_j);
-                         j++) {
-                        if (board[move.to_i][j] > 0) {
-                            throw std::invalid_argument("Rook cannot move there - placeholder exception");
+            // if 'from' square isn't specified
+            if (move.from_i < 0 && move.from_j < 0) {
+                // We need to check all pieces in case the notation is imprecise
+                for (; it != piece_locations[move.piece].end(); it++) {
+                    // if the rook is on the same rank as the 'to' square...
+                    if ((*it).i == move.to_i) {
+                        if (verified) {
+                            throw std::invalid_argument("Imprecise notation - placeholder exception");
+                        }
+
+                        verified = check_horiz_blockers((*it).i, (*it).j, move.to_j);
+                        if (verified) {
+                            move.from_i = (*it).i;
+                            move.from_j = (*it).j;
+                        }
+                    }
+                    else if ((*it).j == move.to_j) {
+                        if (verified) {
+                            throw std::invalid_argument("Imprecise notation - placeholder exception");
+                        }
+
+                        verified = check_vert_blockers((*it).j, (*it).i, move.to_i);
+                        if (verified) {
+                            move.from_i = (*it).i;
+                            move.from_j = (*it).j;
                         }
                     }
 
-                    move.from_i = (*it).i;
-                    move.from_j = (*it).j;
-                    break;
+                }
+                if (!verified) {
+                    throw std::invalid_argument("Invalid move");
+                }
+            }
+            else if (move.from_i >= 0 && move.from_j < 0) {
+                for (; it != piece_locations[move.piece].end(); it++) {
+                    if ((*it).i == move.from_i) {
+                        if (verified) {
+                            throw std::invalid_argument("Imprecise notation - placeholder exception");
+                        }
 
+                        verified = check_horiz_blockers((*it).i, (*it).j, move.to_j);
+                        if (verified) {
+                            move.from_i = (*it).i;
+                            move.from_j = (*it).j;
+                        }
+                    }
+                }
+                if (!verified) {
+                    throw std::invalid_argument("Invalid move");
+                }
+            }
+            else if (move.from_i < 0 && move.from_j >= 0) {
+                for (; it != piece_locations[move.piece].end(); it++) {
+                    if ((*it).j == move.from_j) {
+                        if (verified) {
+                            throw std::invalid_argument("Imprecise notation - placeholder exception");
+                        }
+
+                        verified = check_vert_blockers((*it).j, (*it).i, move.to_i);
+                        if (verified) {
+                            move.from_i = (*it).i;
+                            move.from_j = (*it).j;
+                        }
+                    }
+                }
+                if (!verified) {
+                    throw std::invalid_argument("Invalid move");
+                }
+            }
+            else {
+                for (; it != piece_locations[move.piece].end(); it++) {
+                    if ((*it).i == move.from_i && (*it).j == move.from_j) {
+                        if (verified) {
+                            throw std::invalid_argument("Imprecise notation - placeholder exception");
+                        }
+
+                        if (move.from_i == move.to_i) {
+                            verified = check_horiz_blockers(move.from_i, move.from_j, move.to_j);
+                        }
+                        else if (move.from_j == move.to_j) {
+                            verified = check_vert_blockers(move.from_j, move.from_i, move.to_i);
+                        }
+                        else {
+                            verified = false;
+                        }
+
+                        if (verified) {
+                            move.from_i = (*it).i;
+                            move.from_j = (*it).j;
+                        }
+                    }
+                }
+
+                if (!verified) {
+                    throw std::invalid_argument("Invalid move");
                 }
             }
             break;
@@ -268,6 +395,8 @@ Move Board::verify_normal_move(Move move) {
 
 
 /**
+ * Emulates a finite state machine to parse the input
+ *
  * @param move a string of the form
  *             [RNBQK]?[a-h]?[1-8]?x?[a-h][1-8]
  *
@@ -277,7 +406,7 @@ Move Board::parse_normal_move(std::string move) {
     Move parsed_move;
 
     int state;
-    const int to_file = 1, to_rank = 2, from_file = 3, capture = 4, from_rank = 5, piece = 6;
+    const int to_file = 1, to_rank = 2, capture = 3, from_file = 4, from_rank = 5, piece = 6;
 
     std::string::const_reverse_iterator it = move.crbegin();
 
