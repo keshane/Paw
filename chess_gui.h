@@ -1,3 +1,7 @@
+#include <vector>
+#include <cstdint>
+#include <string>
+
 enum Piece : uint8_t {
     WHITE_PAWN = 1,
     WHITE_ROOK = 2,
@@ -33,6 +37,7 @@ typedef struct Coordinate {
     int8_t j;
 } Coordinate;
 
+void print_move(Move move);
 class Board {
     private:
         uint8_t board[8][8];
@@ -46,6 +51,10 @@ class Board {
         bool has_clear_diag(int8_t ia, int8_t ja, int8_t ib, int8_t jb);
         Move verify_rook_move(Move move);
         Move verify_bishop_move(Move move);
+        Move verify_knight_move(Move move);
+        Move verify_queen_move(Move move);
+        Move verify_king_move(Move move);
+        Move verify_pawn_move(Move move);
 
         std::vector<Coordinate> piece_locations[NUMBER_OF_PIECES];
         bool dummy;

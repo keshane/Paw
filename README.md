@@ -1,5 +1,6 @@
 # Pal
 Command-line chess interface in C++
+
 **P**layers  
 **a**re  
 **w**inners
