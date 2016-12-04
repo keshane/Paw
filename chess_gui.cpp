@@ -1,6 +1,9 @@
 #include <string>
 #include <iostream>
 #include "chess_gui.h"
+void DIE(char const *message) {
+    std::cout << message << std::endl;
+}
 
 int main(int argc, char *argv[]) {
     Board board;

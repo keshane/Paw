@@ -9,11 +9,6 @@
 #include <vector>
 #include "chess_gui.h"
 
-void DIE(char *message);
-
- 
-
-
 Board::Board() {
     // Fill in white pieces
     board[0][0] = WHITE_ROOK;
@@ -71,6 +66,9 @@ Board::Board() {
     white_move = true;
 }
 
+/**
+ * Prints the current state of the board
+ */
 void Board::print_board() {
     std::cout << "              BLACK\n";
     // top of board
@@ -157,6 +155,15 @@ void Board::print_board() {
 }
 
 
+/**
+ * Accepts a move in algebraic notation as a string and attempts
+ * to make that move
+ *
+ * @param move algebraic notation for a move on the chess board
+ *
+ * @return true if the notation and move are valid and the move
+ *         is made, false otherwise
+ */
 bool Board::enter_move(std::string move) {
     Move parsed_move;
     if (move.back() >= '1' && move.back() <= '8') {
@@ -172,9 +179,6 @@ bool Board::enter_move(std::string move) {
     else {
         parse_special_move(move);
     }
-
-    // TODO: verify move
-    // complete_move = verify_normal_move(parsed_move);
 
     if (white_move) {
         switch (parsed_move.piece_name) {
@@ -256,6 +260,12 @@ void print_move(Move move) {
 
 }
 
+/**
+ * Updates the board and piece list with the specified move
+ *
+ * @param move a Move that has all fields filled out (move.piece
+ *             should be initialized)
+ */
 void Board::execute_normal_move(Move move) {
     if (move.from_i < 0 || move.from_j < 0) {
         throw std::invalid_argument("executing bad coordinates: contact developer");
@@ -279,6 +289,67 @@ Move Board::parse_special_move(std::string move) {
     Move parsed_move;
     return parsed_move;
 }
+
+/**
+ * Ensures that a move with at least a specified destination and
+ * piece type is valid and legal.
+ *
+ * @param move a Move with at least the destination, capture, and piece fields
+ *             initialized with valid values, i.e. to_i and to_j >= 0,
+ *             capture == true |false, piece >= WHITE_PAWN
+ *
+ * @return a Move that has the source square fields (from_i, from_j) filled out
+ * @throws TODOexception
+ */
+Move Board::verify_normal_move(Move move) {
+    Move verified_move;
+    if (move.piece >= WHITE_PAWN && move.piece <= WHITE_KING &&
+        board[move.to_i][move.to_j] >= WHITE_PAWN &&
+        board[move.to_i][move.to_j] <= WHITE_KING) {
+        throw std::invalid_argument("Cannot move onto your own piece");
+    }
+    if (move.piece >= BLACK_PAWN && move.piece <= BLACK_KING &&
+        board[move.to_i][move.to_j] >= BLACK_PAWN &&
+        board[move.to_i][move.to_j] <= BLACK_KING) {
+        throw std::invalid_argument("Cannot move onto your own piece");
+    }
+
+    switch (move.piece) {
+        case WHITE_ROOK:
+        case BLACK_ROOK:
+            verified_move = verify_rook_move(move);
+            break;
+
+        case WHITE_BISHOP:
+        case BLACK_BISHOP:
+            verified_move = verify_bishop_move(move);
+            break;
+
+        case WHITE_KNIGHT:
+        case BLACK_KNIGHT:
+            verified_move = verify_knight_move(move);
+            break;
+        case WHITE_QUEEN:
+        case BLACK_QUEEN:
+            verified_move = verify_queen_move(move);
+            break;
+        case WHITE_KING:
+        case BLACK_KING:
+            verified_move = verify_king_move(move);
+            break;
+        case WHITE_PAWN:
+        case BLACK_PAWN:
+            verified_move = verify_pawn_move(move);
+            break;
+            
+        default:
+            break;
+    }
+
+    return verified_move;
+}
+
+
 
 // TODO: can probably make these methods more general-purpose, i.e.
 // check from square to square instead of a rank or file
@@ -352,6 +423,17 @@ bool Board::has_clear_diag(int8_t ia, int8_t ja, int8_t ib, int8_t jb) {
     return true;
 }
 
+/**
+ * Ensure that the given move is valid and legal for a bishop according 
+ * to the positions of the pieces on the board
+ *
+ * @param move a Move with at least the destination, capture, and piece fields
+ *             initialized with valid values, i.e. to_i and to_j >= 0,
+ *             capture == true |false, piece >= WHITE_PAWN
+ *
+ * @return a Move that has the source square fields (from_i, from_j) filled out
+ * @throws TODOexception
+ */
          
 Move Board::verify_bishop_move(Move move) {
     std::vector<Coordinate>::iterator it = piece_locations[move.piece].begin();
@@ -447,6 +529,17 @@ Move Board::verify_bishop_move(Move move) {
     return move;
 }
 
+/**
+ * Ensure that the given move is valid and legal for a rook according 
+ * to the positions of the pieces on the board
+ *
+ * @param move a Move with at least the destination, capture, and piece fields
+ *             initialized with valid values, i.e. to_i and to_j >= 0,
+ *             capture == true |false, piece >= WHITE_PAWN
+ *
+ * @return a Move that has the source square fields (from_i, from_j) filled out
+ * @throws TODOexception
+ */
 Move Board::verify_rook_move(Move move) {
     std::vector<Coordinate>::iterator it = piece_locations[move.piece].begin();
     bool verified = false;
@@ -558,6 +651,17 @@ Move Board::verify_rook_move(Move move) {
     return move;
 }
 
+/**
+ * Ensure that the given move is valid and legal for a rook according 
+ * to the positions of the pieces on the board
+ *
+ * @param move a Move with at least the destination, capture, and piece fields
+ *             initialized with valid values, i.e. to_i and to_j >= 0,
+ *             capture == true |false, piece >= WHITE_PAWN
+ *
+ * @return a Move that has the source square fields (from_i, from_j) filled out
+ * @throws TODOexception
+ */
 Move Board::verify_knight_move(Move move) {
     std::vector<Coordinate>::iterator it = piece_locations[move.piece].begin();
     bool verified = false;
@@ -660,7 +764,18 @@ Move Board::verify_knight_move(Move move) {
 
     return move;
 }
- 
+
+/**
+* Ensure that the given move is valid and legal for a queen according 
+* to the positions of the pieces on the board
+*
+* @param move a Move with at least the destination, capture, and piece fields
+*             initialized with valid values, i.e. to_i and to_j >= 0,
+*             capture == true |false, piece >= WHITE_PAWN
+*
+* @return a Move that has the source square fields (from_i, from_j) filled out
+* @throws TODOexception
+*/
 Move Board::verify_queen_move(Move move) {
     std::vector<Coordinate>::iterator it = piece_locations[move.piece].begin();
     bool verified = false;
@@ -820,6 +935,17 @@ Move Board::verify_queen_move(Move move) {
     return move;
 }
 
+/**
+* Ensure that the given move is valid and legal for a king according 
+* to the positions of the pieces on the board
+*
+* @param move a Move with at least the destination, capture, and piece fields
+*             initialized with valid values, i.e. to_i and to_j >= 0,
+*             capture == true |false, piece >= WHITE_PAWN
+*
+* @return a Move that has the source square fields (from_i, from_j) filled out
+* @throws TODOexception
+*/
 Move Board::verify_king_move(Move move) {
     bool verified = false;
     // There should only be one king
@@ -851,6 +977,17 @@ Move Board::verify_king_move(Move move) {
     return move;
 }
 
+/**
+* Ensure that the given move is valid and legal for a pawn according 
+* to the positions of the pieces on the board
+*
+* @param move a Move with at least the destination, capture, and piece fields
+*             initialized with valid values, i.e. to_i and to_j >= 0,
+*             capture == true |false, piece >= WHITE_PAWN
+*
+* @return a Move that has the source square fields (from_i, from_j) filled out
+* @throws TODOexception
+*/
 Move Board::verify_pawn_move(Move move) {
     if (move.to_i >= 7 || move.to_i <= 0) {
         throw std::invalid_argument("Specify a promotion");
@@ -923,54 +1060,6 @@ Move Board::verify_pawn_move(Move move) {
 
 
 
-
-Move Board::verify_normal_move(Move move) {
-    Move verified_move;
-    if (move.piece >= WHITE_PAWN && move.piece <= WHITE_KING &&
-        board[move.to_i][move.to_j] >= WHITE_PAWN &&
-        board[move.to_i][move.to_j] <= WHITE_KING) {
-        throw std::invalid_argument("Cannot move onto your own piece");
-    }
-    if (move.piece >= BLACK_PAWN && move.piece <= BLACK_KING &&
-        board[move.to_i][move.to_j] >= BLACK_PAWN &&
-        board[move.to_i][move.to_j] <= BLACK_KING) {
-        throw std::invalid_argument("Cannot move onto your own piece");
-    }
-
-    switch (move.piece) {
-        case WHITE_ROOK:
-        case BLACK_ROOK:
-            verified_move = verify_rook_move(move);
-            break;
-
-        case WHITE_BISHOP:
-        case BLACK_BISHOP:
-            verified_move = verify_bishop_move(move);
-            break;
-
-        case WHITE_KNIGHT:
-        case BLACK_KNIGHT:
-            verified_move = verify_knight_move(move);
-            break;
-        case WHITE_QUEEN:
-        case BLACK_QUEEN:
-            verified_move = verify_queen_move(move);
-            break;
-        case WHITE_KING:
-        case BLACK_KING:
-            verified_move = verify_king_move(move);
-            break;
-        case WHITE_PAWN:
-        case BLACK_PAWN:
-            verified_move = verify_pawn_move(move);
-            break;
-            
-        default:
-            break;
-    }
-
-    return verified_move;
-}
 
 
 
@@ -1130,18 +1219,5 @@ Move Board::parse_normal_move(std::string move) {
 
     return parsed_move;
 }
-
-
-    
-
-
-
-void DIE(char const *message) {
-    std::cout << message << std::endl;
-}
-
-
-
-
 
 

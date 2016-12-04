@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <string>
 
+void DIE(char *message);
+
 enum Piece : uint8_t {
     WHITE_PAWN = 1,
     WHITE_ROOK = 2,
