@@ -32,12 +32,18 @@ typedef struct Move {
         Piece piece;
     };
     bool capture;
+    bool en_passant;
 } Move;
 
 typedef struct Coordinate {
     int8_t i;
     int8_t j;
 } Coordinate;
+
+typedef struct Square {
+    Piece piece;
+    Coordinate coordinate;
+} Square;
 
 void print_move(Move move);
 class Board {
@@ -59,8 +65,11 @@ class Board {
         Move verify_pawn_move(Move move);
 
         std::vector<Coordinate> piece_locations[NUMBER_OF_PIECES];
+        std::stack<Square> captured_pieces;
         bool dummy;
         bool dummy2;
+        Coordinate en_passant;
+        bool en_passant_possible;
 
     public:
         Board();

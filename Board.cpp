@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <stack>
 #include "chess_gui.h"
 
 Board::Board() {
@@ -270,12 +272,53 @@ void Board::execute_normal_move(Move move) {
     if (move.from_i < 0 || move.from_j < 0) {
         throw std::invalid_argument("executing bad coordinates: contact developer");
     }
+
+    // remove captured piece from piece list
+    if (move.capture || move.en_passant) {
+        Piece captured_piece = (Piece) (move.en_passant ? board[move.from_i][move.to_j] : board[move.to_i][move.to_j]);
+        int8_t captured_i = move.en_passant ? move.from_i : move.to_i;
+        int8_t captured_j = move.to_j;
+
+        std::vector<Coordinate> piece_vector = piece_locations[captured_piece];
+        piece_vector.erase(
+            std::remove_if(piece_vector.begin(),
+                           piece_vector.end(),
+                           [captured_i, captured_j](Coordinate c) {
+                                return (captured_i == c.i && captured_j == c.j);
+                           }),
+            piece_vector.end());
+
+        // Keep track of captured pieces
+        Square captured_square;
+        captured_square.piece = captured_piece;
+        captured_square.coordinate = {captured_i, captured_j};
+        captured_pieces.push(captured_square);
+    }
+    if (move.en_passant) {
+        board[move.from_i][move.to_j] = 0;
+    }
     board[move.to_i][move.to_j] = board[move.from_i][move.from_j];
     board[move.from_i][move.from_j] = 0;
 
-    std::vector<Coordinate>::iterator it = piece_locations[move.piece].begin();
+    
+    // TODO en passant
+    if (en_passant_possible) {
+        en_passant_possible = false;
+    }
+
+
+    std::vector<Coordinate>::iterator it;
+    it = piece_locations[move.piece].begin();
     for (; it != piece_locations[move.piece].end(); it++) {
         if ((*it).i == move.from_i && (*it).j == move.from_j) {
+
+            // check for potential en passant on the next move
+            if ((move.piece == WHITE_PAWN || move.piece == BLACK_PAWN) &&
+                std::abs(move.from_i - move.to_i) == 2) {
+                int8_t ep_i = (move.to_i - move.from_i) / 2 + move.from_i;
+                int8_t ep_j = move.from_j;
+                en_passant = {ep_i, ep_j};
+            }
             (*it).i = move.to_i;
             (*it).j = move.to_j;
             break;
@@ -1012,12 +1055,18 @@ Move Board::verify_pawn_move(Move move) {
                     ((*it).i == start_rank && (*it).i + 2 * move_incr == move.to_i)) {
                     std::cout << "verified pawn";
 
+
+
                     
                     verified = has_clear_vert((*it).j, (*it).i, move.to_i + move_incr);
                     if (verified) {
                         move.from_i = (*it).i;
                         move.from_j = (*it).j;
 
+                        // TODO en passant
+                        if (std::abs(move.to_i - move.from_i) == 2) {
+                            en_passant_possible = true;
+                        }
                         break;
                     }
 
@@ -1031,8 +1080,10 @@ Move Board::verify_pawn_move(Move move) {
         if (move.from_j != move.to_j + 1 && move.from_j != move.to_j - 1) {
             throw std::invalid_argument("Pawn can't do that");
         }
+        // TODO en passant
+        bool en_passant_available = (move.to_i == en_passant.i && move.to_j == en_passant.j);
 
-        if (board[move.to_i][move.to_j] == 0) {
+        if (board[move.to_i][move.to_j] == 0 && !en_passant_available) {
             throw std::invalid_argument("No capture available");
         }
 
@@ -1043,6 +1094,8 @@ Move Board::verify_pawn_move(Move move) {
             if ((*it).j == move.from_j && (*it).i + move_incr == move.to_i) {
                 move.from_i = (*it).i;
                 move.from_j = (*it).j;
+
+                move.en_passant = en_passant_available;
 
                 verified = true;
             }
