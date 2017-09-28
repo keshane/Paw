@@ -6,16 +6,29 @@ void DIE(char const *message) {
 }
 
 int main(int argc, char *argv[]) {
-    Board board;
-    board.print_board();
+    std::string white_name;
+    std::string black_name;
+
+    std::cout << "Enter name for white player\n";
+    getline(std::cin, white_name);
+
+    std::cout << "Enter name for black player\n";
+    getline(std::cin, black_name);
+
+    Game game(white_name, black_name);
+    game.print_board();
     std::string move;
     while(getline(std::cin, move)) {
         if (move.empty() || move == "\n")
             continue;
         if (move == "exit")
             break;
-        if (board.enter_move(move))
-            board.print_board();
+        if (game.enter_move(move)) {
+            game.print_board();
+        }
     }
+
+
+
     std::cout << "Thank you for playing today\n";
 }
