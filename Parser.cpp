@@ -1,14 +1,14 @@
 #include <string>
 #include "chess_gui.h"
 
-Parser() {}
+Parser::Parser() {}
 
 Move Parser::parse_algebraic_notation(std::string notation)
 {
     this->move_notation = notation;
 
     // TODO create fresh move
-    this->parsed_move = new Move();
+    this->parsed_move = Move{};
 
     if (this->move_notation == "O-O" || this->move_notation == "0-0-0")
     {
@@ -18,32 +18,35 @@ Move Parser::parse_algebraic_notation(std::string notation)
     {
         // castle queen side
     }
-    else if (this->move_notation /* ends in e.p. */)
+    else if (this->move_notation == "ep"/* ends in e.p. */)
     {
         // en passant
     }
-    else if (this->move_notation /* ends in B, N, R, or Q */)
+    else if (this->move_notation == "Q"/* ends in B, N, R, or Q */)
     {
         // promotion
     }
-    else if (this->move_notation.back() == "+")
+    else if (this->move_notation.back() == '+')
     {
         this->move_notation.pop_back();
         parse_normal_move();
-        this->parsed_move.check |= MoveType.Check;
+        //this->parsed_move.check |= MoveType.Check;
         return this->parsed_move;
     }
-    else if (this->move_notation.back() == "#")
+    else if (this->move_notation.back() == '#')
     {
         this->move_notation.pop_back();
         parse_normal_move();
-        this->parsed_move.checkmate |= MoveType.Checkmate;
+        //this->parsed_move.checkmate |= MoveType.Checkmate;
         return this->parsed_move;
     }
     else
     {
-        return parse_normal_move();
+        parse_normal_move();
+        return parsed_move; // TODO
     }
+
+    return parsed_move;
 }
 
 void Parser::parse_normal_move()
@@ -95,7 +98,7 @@ void Parser::parse_destination_file() {
 }
 
 void Parser::parse_capture(){
-    this->parsed_move.move_type |= MoveType.Capture;
+    this->parsed_move.move_type = parsed_move.move_type | (MoveType::Capture);
 
     this->move_notation.pop_back();
     if (this->move_notation.back() == 'K' ||
@@ -120,7 +123,7 @@ void Parser::parse_capture(){
 void Parser::parse_source_rank(){
     this->parsed_move.source.rank = this->move_notation.back() - '1';
 
-    this->move_notation.pop_back()
+    this->move_notation.pop_back();
     if (this->move_notation.back() == 'K' ||
         this->move_notation.back() == 'Q' ||
         this->move_notation.back() == 'R' ||
@@ -156,23 +159,24 @@ void Parser::parse_source_file(){
 }
 
 void Parser::parse_moving_piece(){
-    const std::unordered_map<std::string, Piece> piece_from_notation = {
-        {"K", Piece.King},
-        {"Q", Piece.Queen},
-        {"B", Piece.Bishop},
-        {"N", Piece.Knight},
-        {"R", Piece.Rook}
+    std::unordered_map<char, Piece> piece_from_notation = {
+        {'K', Piece{PieceType::King, Color::None}},
+        {'Q', Piece{PieceType::Queen, Color::None}},
+        {'B', Piece{PieceType::Bishop, Color::None}},
+        {'N', Piece{PieceType::Knight, Color::None}},
+        {'R', Piece{PieceType::Rook, Color::None}}
     };
 
     if (this->move_notation.empty()) {
-        this->parsed_move.piece = Piece.Pawn;
+        this->parsed_move.piece = Piece{PieceType::Pawn, Color::None};
     }
     else {
-        this->parsed_move.piece = piece_from_notation[this->move_notation.back()];
+        char piece_notation = move_notation.back();
+        this->parsed_move.piece = piece_from_notation[piece_notation];
     }
 
 
-    this->parsed_move.pop_back();
+    this->move_notation.pop_back();
     if (!this->move_notation.empty()) {
         // throw
 

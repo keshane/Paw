@@ -23,6 +23,8 @@ int main(int argc, char *argv[]) {
             continue;
         if (move == "exit")
             break;
+        if (move == "board")
+            game.print_board();
         if (game.enter_move(move)) {
             game.print_board();
         }
@@ -30,5 +32,5 @@ int main(int argc, char *argv[]) {
 
 
 
-    std::cout << "Thank you for playing today\n";
+    std::cout << "Thank you for playing today\n" << std::endl;
 }

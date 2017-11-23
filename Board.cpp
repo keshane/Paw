@@ -1,46 +1,59 @@
+#include <exception>
+#include <stdexcept>
+#include <string>
+#include <iostream>
 #include "chess_gui.h"
 
-Board::Board() {
-    // Initialize white pieces
-    this->board[0][0] = Piece(PieceType.Rook, Color.White);
-    this->board[1][0] = Piece(PieceType.Knight, Color.White);
-    this->board[2][0] = Piece(PieceType.Bishop, Color.White);
-    this->board[3][0] = Piece(PieceType.Queen, Color.White);
-    this->board[4][0] = Piece(PieceType.King, Color.White);
-    this->board[5][0] = Piece(PieceType.Bishop, Color.White);
-    this->board[6][0] = Piece(PieceType.Knight, Color.White);
-    this->board[7][0] = Piece(PieceType.Rook, Color.White);
-
-    for (int i = 0; i < 8; i++) {
-        this->board[i][1] = Piece(PieceType.Pawn, Color.White);
-    }
-
-    // Initialize black pieces
-    this->board[0][7] = Piece(PieceType.Rook, Color.Black);
-    this->board[1][7] = Piece(PieceType.Knight, Color.Black);
-    this->board[2][7] = Piece(PieceType.Bishop, Color.Black);
-    this->board[3][7] = Piece(PieceType.Queen, Color.Black);
-    this->board[4][7] = Piece(PieceType.King, Color.Black);
-    this->board[5][7] = Piece(PieceType.Bishop, Color.Black);
-    this->board[6][7] = Piece(PieceType.Knight, Color.Black);
-    this->board[7][7] = Piece(PieceType.Rook, Color.Black);
-
-    for (int i = 0; i < 8; i++) {
-        this->board[i][6] = Piece(PieceType.Pawn, Color.Black);
-    }
-
-    // Initialize empty spaces
-    for (int i = 0; i < 8; i++) {
-        for (int j = 2; j < 6; j++) {
-            this->board[i][j] = Piece(PieceType.None, Color.None);
+Board::Board()
+{
+    for (int file = 0; file < 8; file++)
+    {
+        for (int rank = 0; rank < 8; rank++)
+        {
+            _board[file][rank] = Square{false, Piece{PieceType::None, Color::None}};
         }
     }
+    _board[0][0] = Square{true, Piece{PieceType::Rook, Color::White}};
+    _board[1][0] = Square{true, Piece{PieceType::Knight, Color::White}};
+    _board[2][0] = Square{true, Piece{PieceType::Bishop, Color::White}};
+    _board[3][0] = Square{true, Piece{PieceType::Queen, Color::White}};
+    _board[4][0] = Square{true, Piece{PieceType::King, Color::White}};
+    _board[5][0] = Square{true, Piece{PieceType::Bishop, Color::White}};
+    _board[6][0] = Square{true, Piece{PieceType::Knight, Color::White}};
+    _board[7][0] = Square{true, Piece{PieceType::Rook, Color::White}};
+
+    _board[0][1] = Square{true, Piece{PieceType::Pawn, Color::White}};
+    _board[1][1] = Square{true, Piece{PieceType::Pawn, Color::White}};
+    _board[2][1] = Square{true, Piece{PieceType::Pawn, Color::White}};
+    _board[3][1] = Square{true, Piece{PieceType::Pawn, Color::White}};
+    _board[4][1] = Square{true, Piece{PieceType::Pawn, Color::White}};
+    _board[5][1] = Square{true, Piece{PieceType::Pawn, Color::White}};
+    _board[6][1] = Square{true, Piece{PieceType::Pawn, Color::White}};
+    _board[7][1] = Square{true, Piece{PieceType::Pawn, Color::White}};
+
+    _board[0][7] = Square{true, Piece{PieceType::Rook, Color::Black}};
+    _board[1][7] = Square{true, Piece{PieceType::Knight, Color::Black}};
+    _board[2][7] = Square{true, Piece{PieceType::Bishop, Color::Black}};
+    _board[3][7] = Square{true, Piece{PieceType::Queen, Color::Black}};
+    _board[4][7] = Square{true, Piece{PieceType::King, Color::Black}};
+    _board[5][7] = Square{true, Piece{PieceType::Bishop, Color::Black}};
+    _board[6][7] = Square{true, Piece{PieceType::Knight, Color::Black}};
+    _board[7][7] = Square{true, Piece{PieceType::Rook, Color::Black}};
+
+    _board[0][6] = Square{true, Piece{PieceType::Pawn, Color::Black}};
+    _board[1][6] = Square{true, Piece{PieceType::Pawn, Color::Black}};
+    _board[2][6] = Square{true, Piece{PieceType::Pawn, Color::Black}};
+    _board[3][6] = Square{true, Piece{PieceType::Pawn, Color::Black}};
+    _board[4][6] = Square{true, Piece{PieceType::Pawn, Color::Black}};
+    _board[5][6] = Square{true, Piece{PieceType::Pawn, Color::Black}};
+    _board[6][6] = Square{true, Piece{PieceType::Pawn, Color::Black}};
+    _board[7][6] = Square{true, Piece{PieceType::Pawn, Color::Black}};
 }
 bool Board::move(Coordinate source, Coordinate destination) {
 
-    if (get_piece(source).PieceType == PieceType.None) {
+    if (get_piece(source).piece.piece_type == PieceType::None) {
         // TODO save history
-        this->board[destination.file][destination.rank] = get_piece(source);
+        _board[destination.file][destination.rank] = get_piece(source);
         return true;
     }
     else {
@@ -48,13 +61,65 @@ bool Board::move(Coordinate source, Coordinate destination) {
     }
 }
 
-Piece Board::get_piece(Coordinate square) {
+Square Board::get_piece(Coordinate square) {
     if (square.file >= 0 && square.rank < 8) {
-        return this->board[square.file][square.rank];
+        return _board[square.file][square.rank];
     }
-    else { 
-        return Piece(PieceType.None, Color.None);
+    else
+    {
+        // TODO throw
+        throw std::logic_error("TODO board out of bounds");
     }
+}
+
+void Board::print_board()
+{
+    // TOP OF BOARD
+    std::cout << "\u250C";
+    for (int file = 0; file < 7; file++) {
+        std::cout << "\u2500\u2500\u2500\u252C";
+    }
+    std::cout << "\u2500\u2500\u2500\u2510\n";
+
+
+    for (int8_t rank = 7; rank >= 0; rank--)
+    {
+        for (int8_t file = 0; file <= 7; file++)
+        {
+            std::cout << "\u2502 "; // vertical line
+            Square square = get_piece(Coordinate{file, rank});
+            if (square.occupied)
+            {
+                std::cout << piece_to_unicode[square.piece];
+            }
+            else
+            {
+                std::cout << " ";
+            }
+            std::cout << " ";
+        }
+
+        // right bar
+        std::cout << "\u2502\n";
+
+        if (rank > 0)
+        {
+            // row boundary
+            std::cout << "\u251C";
+            for (int file = 0; file < 7; file++) {
+                std::cout << "\u2500\u2500\u2500\u253C";
+            }
+            std::cout << "\u2500\u2500\u2500\u2524\n";
+
+        }
+    }
+    // print bottom of board
+    std::cout << "\u2514";
+    for (int file = 0; file < 7; file++) {
+        std::cout << "\u2500\u2500\u2500\u2534";
+    }
+    std::cout << "\u2500\u2500\u2500\u2518\n";
+
 }
 // /**
 //  *

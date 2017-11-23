@@ -1,19 +1,28 @@
 #include "chess_gui.h"
 
 Game::Game(std::string white_name, std::string black_name) 
-    : this.chessboard(), this.white_player(white_name), this.black_player(black_name), this.white_move(true) {
-}
+    : _white_player(white_name, _chessboard, Color::White),
+      _black_player(black_name, _chessboard, Color::Black),
+      _white_move(true)
+   {
 
-Game::enter_move(std::string move) {
+   }
+
+bool Game::enter_move(std::string move) {
     bool successful;
-    if (this.white_move) {
-        successful = this.white_player.make_move(move);
+    if (_white_move) {
+        _white_player.make_move(move);
     }
     else {
-        successful = this.black_player.make_move(move);
+        _black_player.make_move(move);
     }
 
     // TODO store moves here
-    return successful;
+    return true;
 
+}
+
+void Game::print_board()
+{
+    _chessboard.print_board();
 }
