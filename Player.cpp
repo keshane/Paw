@@ -19,7 +19,7 @@ void Player::make_move(std::string move_notation)
 {
     Move final_move;
 
-    final_move = this->_move_parser.parse_algebraic_notation(move_notation);
+    final_move = Parser::parse_algebraic_notation(move_notation);
 
     final_move = fill_move(final_move);
 
@@ -54,12 +54,12 @@ Move Player::fill_move(Move partial_move)
             partial_move.move_type = partial_move.move_type | MoveType::Capture; // TODO remove this
         }
 
-        std::vector<Coordinate> potential_sources = get_source_squares(partial_move.destination, partial_move.piece.piece_type);
+        std::vector<Coordinate> potential_sources = get_source_squares(partial_move.destination, partial_move.piece_type);
         // TODO refactor: delete Coordinates that don't match criteria and then check for size() == 1
         // If neither source file nor source rank is specified
         if (partial_move.source.file < 0 && partial_move.source.rank < 0)
         {
-            if (partial_move.piece.piece_type == PieceType::None)
+            if (partial_move.piece_type == PieceType::None)
             {
                 // throw
                 // TODO don't need to check because parser should guarantee this
@@ -183,14 +183,14 @@ Move Player::fill_move(Move partial_move)
  */
 bool Player::is_clear_path(Coordinate source, Coordinate destination)
 {
-    int8_t file_difference = destination.file - source.file;
-    int8_t rank_difference = destination.rank - source.rank;
+    int file_difference = destination.file - source.file;
+    int rank_difference = destination.rank - source.rank;
 
-    int8_t file_direction = file_difference / std::abs(file_difference);
-    int8_t rank_direction = rank_difference / std::abs(rank_difference);
+    int file_direction = file_difference / std::abs(file_difference);
+    int rank_direction = rank_difference / std::abs(rank_difference);
 
-    int8_t path_file = source.file + file_direction;
-    int8_t path_rank = source.rank + rank_direction;
+    int path_file = source.file + file_direction;
+    int path_rank = source.rank + rank_direction;
 
     while (path_file != destination.file && path_rank != destination.rank)
     {
@@ -209,9 +209,9 @@ bool Player::is_clear_path(Coordinate source, Coordinate destination)
 std::vector<Coordinate> Player::get_source_squares(Coordinate destination, PieceType piece_type)
 {
     std::vector<Coordinate> potential_sources;
-    for (int8_t file = 0; file < 8; file++)
+    for (int file = 0; file < 8; file++)
     {
-        for (int8_t rank = 0; rank < 8; rank++)
+        for (int rank = 0; rank < 8; rank++)
         {
             Piece square = _chessboard.get_piece(Coordinate{file, rank}).piece;
             if (square.piece_type == piece_type && square.color == _color)
@@ -310,8 +310,8 @@ bool Player::is_valid_rook_move(Coordinate source, Coordinate destination)
  */
 bool Player::is_valid_knight_move(Coordinate source, Coordinate destination)
 {
-    int8_t file_distance = std::abs(destination.file - source.file);
-    int8_t rank_distance = std::abs(destination.rank - source.rank);
+    int file_distance = std::abs(destination.file - source.file);
+    int rank_distance = std::abs(destination.rank - source.rank);
 
     if ((file_distance != 0 && rank_distance != 0) &&
         (file_distance + rank_distance == 3))
@@ -333,8 +333,8 @@ bool Player::is_valid_knight_move(Coordinate source, Coordinate destination)
  */
 bool Player::is_valid_bishop_move(Coordinate source, Coordinate destination)
 {
-    int8_t file_distance = std::abs(destination.file - source.file);
-    int8_t rank_distance = std::abs(destination.rank - source.rank);
+    int file_distance = std::abs(destination.file - source.file);
+    int rank_distance = std::abs(destination.rank - source.rank);
 
     bool is_diagonal = (file_distance == rank_distance);
     bool is_clear = is_clear_path(source, destination);
@@ -382,8 +382,8 @@ bool Player::is_valid_king_move(Coordinate source, Coordinate destination)
 {
     bool file_difference = destination.file - source.file;
     bool rank_difference = destination.rank - source.rank;
-    int8_t file_distance = std::abs(file_difference);
-    int8_t rank_distance = std::abs(rank_difference);
+    int file_distance = std::abs(file_difference);
+    int rank_distance = std::abs(rank_difference);
 
     if ((file_distance == 1 && rank_distance == 0) ||
         (file_distance == 0 && rank_distance == 1) ||
@@ -407,13 +407,13 @@ bool Player::is_valid_king_move(Coordinate source, Coordinate destination)
  */
 bool Player::is_valid_pawn_move(Coordinate source, Coordinate destination)
 {
-    int8_t rank_difference = destination.rank - source.rank;
+    int rank_difference = destination.rank - source.rank;
     if (rank_difference == 0)
     {
         return false;
     }
     bool is_same_file = (destination.file == source.file);
-    int8_t move_direction = rank_difference / std::abs(rank_difference); 
+    int move_direction = rank_difference / std::abs(rank_difference); 
     bool is_correct_direction = (move_direction == _direction);
 
     if (rank_difference == 1)
@@ -492,8 +492,8 @@ bool Player::is_valid_move(PieceType moving_piece, Coordinate source, Coordinate
 bool Player::is_valid_pawn_capture(Coordinate source, Coordinate destination)
 {
     // TODO en passant
-    int8_t file_distance = std::abs(destination.file - source.file);
-    int8_t rank_distance = std::abs(destination.rank - source.rank);
+    int file_distance = std::abs(destination.file - source.file);
+    int rank_distance = std::abs(destination.rank - source.rank);
 
     bool is_one_diagonal = (file_distance == 1 && rank_distance == 1);
     bool is_correct_direction = (destination.rank - source.rank == _direction);

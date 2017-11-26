@@ -1,185 +1,230 @@
 #include <string>
 #include "chess_gui.h"
 
-Parser::Parser() {}
-
-Move Parser::parse_algebraic_notation(std::string notation)
+namespace Parser
 {
-    this->move_notation = notation;
-
-    // TODO create fresh move
-    this->parsed_move = Move{};
-
-    if (this->move_notation == "O-O" || this->move_notation == "0-0-0")
+Move parse_algebraic_notation(std::string notation)
+{
+    Move parsed_move;
+    if (notation == "O-O" || notation == "0-0-0")
     {
         // castle king side
     }
-    else if (this->move_notation == "O-O-O" || this->move_notation == "0-0-0")
+    else if (notation == "O-O-O" || notation == "0-0-0")
     {
         // castle queen side
     }
-    else if (this->move_notation == "ep"/* ends in e.p. */)
+    else if (notation == "ep" /* ends in e.p. */)
     {
         // en passant
     }
-    else if (this->move_notation == "Q"/* ends in B, N, R, or Q */)
+    else if (notation == "Q" /* ends in B, N, R, or Q */)
     {
         // promotion
     }
-    else if (this->move_notation.back() == '+')
+    else if (notation.back() == '+')
     {
-        this->move_notation.pop_back();
-        parse_normal_move();
-        //this->parsed_move.check |= MoveType.Check;
-        return this->parsed_move;
+        notation.pop_back();
+        parsed_move = parse_normal_move(notation);
+        parsed_move.move_type = parsed_move.move_type | MoveType::Check;
+        return parsed_move;
     }
-    else if (this->move_notation.back() == '#')
+    else if (notation.back() == '#')
     {
-        this->move_notation.pop_back();
-        parse_normal_move();
-        //this->parsed_move.checkmate |= MoveType.Checkmate;
-        return this->parsed_move;
+        notation.pop_back();
+        parsed_move = parse_normal_move(notation);
+        parsed_move.move_type = parsed_move.move_type | MoveType::Checkmate;
+        return parsed_move;
     }
     else
     {
-        parse_normal_move();
+        parsed_move = parse_normal_move(notation);
         return parsed_move; // TODO
+    }
+}
+
+// TODO return reference to Move ?
+// TODO use substring
+namespace
+{
+Move parse_normal_move(std::string notation)
+{
+    if (notation.back() >= '1' && notation.back() <= '8')
+    {
+        Move parsed_move = parse_destination_rank(notation);
+        parsed_move.move_type = parsed_move.move_type | MoveType::Normal;
+        return parsed_move;
+    }
+    else
+    {
+        // throw
+    }
+}
+
+Move parse_destination_rank(std::string notation)
+{
+    char destination_rank = notation.back() - '1';
+
+    notation.pop_back();
+    if (notation.back() >= 'a' && notation.back() <= 'h')
+    {
+        Move parsed_move = parse_destination_file(notation);
+        parsed_move.destination.rank = (int) destination_rank;
+        return parsed_move;
+    }
+    else
+    {
+        // throw
+    }
+}
+
+Move parse_destination_file(std::string notation)
+{
+    char destination_file = notation.back() - 'a';
+    notation.pop_back();
+    Move parsed_move;
+
+    if (notation.empty() ||
+        notation.back() == 'K' ||
+        notation.back() == 'Q' ||
+        notation.back() == 'R' ||
+        notation.back() == 'B' ||
+        notation.back() == 'N')
+    {
+        parsed_move = parse_moving_piece(notation);
+    }
+    else if (notation.back() == 'x' || notation.back() == 'X')
+    {
+        parsed_move = parse_capture(notation);
+    }
+    else if (notation.back() >= 'a' && notation.back() <= 'h')
+    {
+        parsed_move = parse_source_file(notation);
+    }
+    else if (notation.back() >= '1' && notation.back() <= '8')
+    {
+        parsed_move = parse_source_rank(notation);
+    }
+    else
+    {
+        // throw
+    }
+
+    parsed_move.destination.file = (int)destination_file;
+    return parsed_move;
+}
+
+Move parse_capture(std::string notation)
+{
+    notation.pop_back();
+    Move parsed_move;
+    if (notation.back() == 'K' ||
+        notation.back() == 'Q' ||
+        notation.back() == 'R' ||
+        notation.back() == 'B' ||
+        notation.back() == 'N')
+    {
+
+        parsed_move = parse_moving_piece(notation);
+    }
+    else if (notation.back() >= 'a' && notation.back() <= 'h')
+    {
+        parsed_move = parse_source_file(notation);
+    }
+    else if (notation.back() >= '1' && notation.back() <= '8')
+    {
+        parsed_move = parse_source_rank(notation);
+    }
+    else
+    {
+        // throw
+    }
+
+    parsed_move.move_type = parsed_move.move_type | MoveType::Capture;
+    return parsed_move;
+}
+
+Move parse_source_rank(std::string notation)
+{
+    char source_rank = notation.back() - '1';
+    notation.pop_back();
+    Move parsed_move;
+
+    if (notation.back() == 'K' ||
+        notation.back() == 'Q' ||
+        notation.back() == 'R' ||
+        notation.back() == 'B' ||
+        notation.back() == 'N')
+    {
+
+        parsed_move = parse_moving_piece(notation);
+    }
+    else if (notation.back() >= 'a' && notation.back() <= 'h')
+    {
+        parsed_move = parse_source_file(notation);
+    }
+    else
+    {
+        // throw
+    }
+
+    parsed_move.source.rank = source_rank;
+    return parsed_move;
+}
+
+Move parse_source_file(std::string notation)
+{
+    char source_file = notation.back() - 'a';
+    notation.pop_back();
+    Move parsed_move;
+
+    if (notation.empty() ||
+        notation.back() == 'K' ||
+        notation.back() == 'Q' ||
+        notation.back() == 'R' ||
+        notation.back() == 'B' ||
+        notation.back() == 'N')
+    {
+
+        parsed_move = parse_moving_piece(notation);
+    }
+    else
+    {
+        // throw
+    }
+
+    parsed_move.source.file = source_file;
+    return parsed_move;
+}
+
+Move parse_moving_piece(std::string notation)
+{
+    std::unordered_map<char, PieceType> piece_from_notation =
+        {
+            {'K', PieceType::King},
+            {'Q', PieceType::Queen},
+            {'B', PieceType::Bishop},
+            {'N', PieceType::Knight},
+            {'R', PieceType::Rook}};
+
+    Move parsed_move{Coordinate{-1, -1}, Coordinate{-1, -1}, PieceType::None, MoveType::None};
+    if (notation.empty())
+    {
+        parsed_move.piece_type = PieceType::Pawn;
+    }
+    else
+    {
+        char piece_notation = notation.back();
+        parsed_move.piece_type = piece_from_notation[piece_notation];
+
+        notation.pop_back();
+        if (!notation.empty())
+        {
+            // throw
+        }
     }
 
     return parsed_move;
 }
-
-void Parser::parse_normal_move()
-{
-    if (this->move_notation.back() >= '1' && this->move_notation.back() <= '8') {
-        parse_destination_rank();
-    }
-    else {
-        // throw
-    }
 }
-
-void Parser::parse_destination_rank() {
-    this->parsed_move.destination.rank = this->move_notation.back() - '1';
-
-    this->move_notation.pop_back();
-    if (this->move_notation.back() >= 'a' && this->move_notation.back() <= 'h') {
-        parse_destination_file();
-    }
-    else {
-        // throw
-    }
-}
-
-void Parser::parse_destination_file() {
-    this->parsed_move.destination.file = this->move_notation.back() - 'a';
-
-    this->move_notation.pop_back();
-    if (this->move_notation.empty()       ||
-        this->move_notation.back() == 'K' ||
-        this->move_notation.back() == 'Q' ||
-        this->move_notation.back() == 'R' ||
-        this->move_notation.back() == 'B' ||
-        this->move_notation.back() == 'N') {
-        parse_moving_piece();
-    }
-    else if (this->move_notation.back() == 'x' || this->move_notation.back() == 'X') {
-        parse_capture();
-    }
-    else if (this->move_notation.back() >= 'a' && this->move_notation.back() <= 'h') {
-        parse_source_file();
-    }
-    else if (this->move_notation.back() >= '1' && this->move_notation.back() <= '8') {
-        parse_source_rank();
-    }
-    else {
-        // throw
-    }
-}
-
-void Parser::parse_capture(){
-    this->parsed_move.move_type = parsed_move.move_type | (MoveType::Capture);
-
-    this->move_notation.pop_back();
-    if (this->move_notation.back() == 'K' ||
-        this->move_notation.back() == 'Q' ||
-        this->move_notation.back() == 'R' ||
-        this->move_notation.back() == 'B' ||
-        this->move_notation.back() == 'N') {
-
-        parse_moving_piece();
-    }
-    else if (this->move_notation.back() >= 'a' && this->move_notation.back() <= 'h') {
-        parse_source_file();
-    }
-    else if (this->move_notation.back() >= '1' && this->move_notation.back() <= '8') {
-        parse_source_rank();
-    }
-    else {
-        // throw
-    }
-}
-
-void Parser::parse_source_rank(){
-    this->parsed_move.source.rank = this->move_notation.back() - '1';
-
-    this->move_notation.pop_back();
-    if (this->move_notation.back() == 'K' ||
-        this->move_notation.back() == 'Q' ||
-        this->move_notation.back() == 'R' ||
-        this->move_notation.back() == 'B' ||
-        this->move_notation.back() == 'N') {
-
-        parse_moving_piece();
-    }
-    else if (this->move_notation.back() >= 'a' && this->move_notation.back() <= 'h') {
-        parse_source_file();
-    }
-    else {
-        // throw
-    }
-}
-void Parser::parse_source_file(){
-    this->parsed_move.source.file = this->move_notation.back() - 'a';
-
-    this->move_notation.pop_back();
-    if (this->move_notation.empty() ||
-        this->move_notation.back() == 'K' ||
-        this->move_notation.back() == 'Q' ||
-        this->move_notation.back() == 'R' ||
-        this->move_notation.back() == 'B' ||
-        this->move_notation.back() == 'N') {
-
-        parse_moving_piece();
-    }
-    else {
-        // throw
-    }
-    
-}
-
-void Parser::parse_moving_piece(){
-    std::unordered_map<char, Piece> piece_from_notation = {
-        {'K', Piece{PieceType::King, Color::None}},
-        {'Q', Piece{PieceType::Queen, Color::None}},
-        {'B', Piece{PieceType::Bishop, Color::None}},
-        {'N', Piece{PieceType::Knight, Color::None}},
-        {'R', Piece{PieceType::Rook, Color::None}}
-    };
-
-    if (this->move_notation.empty()) {
-        this->parsed_move.piece = Piece{PieceType::Pawn, Color::None};
-    }
-    else {
-        char piece_notation = move_notation.back();
-        this->parsed_move.piece = piece_from_notation[piece_notation];
-    }
-
-
-    this->move_notation.pop_back();
-    if (!this->move_notation.empty()) {
-        // throw
-
-    }
-
 }

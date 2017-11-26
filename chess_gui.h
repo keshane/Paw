@@ -1,132 +1,11 @@
 #include <cstdint>
-#include <vector>
 #include <string>
 #include <unordered_map>
-#include <stack>
+#include <vector>
+
+#include "entities.h"
 
 void DIE(char *message);
-
-/**
- * Utility struct to pack rank and file into one type
- */
-typedef struct {
-    int8_t file;
-    int8_t rank;
-} Coordinate;
-
-/**
- * Defines the different type of pieces
- */
-enum class PieceType {
-    None = 0,
-    Pawn = 1,
-    Rook = 2,
-    Knight = 3,
-    Bishop = 4,
-    Queen = 5,
-    King = 6,
-};
-
-/**
- * Defines the color of a component of the game
- */
-enum class Color {
-    None,
-    Black,
-    White
-};
-
-/**
- * Defines a specific piece by its type and color
- */
-typedef struct {
-    PieceType piece_type;
-    Color color;
-} Piece;
-
-inline bool operator== (Piece a, Piece b)
-{
-    if (a.piece_type == b.piece_type && a.color == b.color)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-
-
-namespace std
-{
-    template<>
-    struct hash<PieceType>
-    {
-        std::size_t operator() (const PieceType& p) const
-        {
-            return (std::hash<int>()(static_cast<int>(p)));
-        }
-    };
-    template<>
-    struct hash<Color>
-    {
-        std::size_t operator() (const Color& c) const
-        {
-            return (std::hash<int>()(static_cast<int>(c)));
-        }
-    };
-    template<>
-    struct hash<Piece>
-    {
-        std::size_t operator() (const Piece& p) const
-        {
-            return (std::hash<PieceType>()(p.piece_type) ^ std::hash<Color>()(p.color));
-        }
-    };
-}
-
-/**
- * Represents a square on the chessboard.
- */
-typedef struct {
-    bool occupied;
-    Piece piece;
-} Square;
-
-/**
- * Defines the non-exclusive categories of moves that can be made.
- */
-enum class MoveType : uint8_t {
-    Normal = 1,
-    Capture = 1 << 1,
-    En_Passant = 1 << 2,
-    Queenside_Castle = 1 << 3,
-    Kingside_Castle = 1 << 4,
-    Check = 1 << 5,
-    Checkmate = 1 << 6,
-
-};
-
-inline MoveType operator& (MoveType a, MoveType b)  {
-     return static_cast<MoveType>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
-}
-
-inline MoveType operator| (MoveType a, MoveType b)  {
-     return static_cast<MoveType>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
-}
-
-/**
- * Represents a single chess move.
- */
-typedef struct Move {
-    Coordinate source;
-    Coordinate destination;
-
-    Piece piece;
-    MoveType move_type = MoveType::Normal;
-
-} Move;
 
 /**
  * Represents the physical chessboard with pieces.
@@ -160,28 +39,27 @@ private:
     };
 };
 
-
-
 /**
- * This class contains functions to parse algebraic notation in string form
+ * This namespace contains functions to parse algebraic notation from string form
  * into a Move type
  */
-class Parser {
-private:
-    std::string move_notation;
-    Move parsed_move;
-    void parse_normal_move();
-    void parse_destination_rank();
-    void parse_destination_file();
-    void parse_capture();
-    void parse_moving_piece();
-    void parse_source_rank();
-    void parse_source_file();
-public:
-    Parser();
+namespace Parser
+{
     Move parse_algebraic_notation(std::string notation);
+    namespace
+    {
+        Move parse_normal_move(std::string notation);
+        Move parse_destination_rank(std::string notation);
+        Move parse_destination_file(std::string notation);
+        Move parse_capture(std::string notation);
+        Move parse_moving_piece(std::string notation);
+        Move parse_source_rank(std::string notation);
+        Move parse_source_file(std::string notation);
+    }
+}
 
-};
+
+
 
 
 /**
@@ -194,7 +72,6 @@ public:
 
 private:
     Board _chessboard;
-    Parser _move_parser;
     std::string _name;
     Color _color;
     bool make_pawn_move(Move pawn_move);
@@ -235,8 +112,8 @@ private:
 
 
     std::vector<Coordinate> get_source_squares(Coordinate source, PieceType piece_type);
-    int8_t _en_passant_rank;
-    int8_t _direction;
+    int _en_passant_rank;
+    int _direction;
 
 };
 

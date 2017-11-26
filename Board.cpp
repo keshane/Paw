@@ -82,9 +82,9 @@ void Board::print_board()
     std::cout << "\u2500\u2500\u2500\u2510\n";
 
 
-    for (int8_t rank = 7; rank >= 0; rank--)
+    for (int rank = 7; rank >= 0; rank--)
     {
-        for (int8_t file = 0; file <= 7; file++)
+        for (int file = 0; file <= 7; file++)
         {
             std::cout << "\u2502 "; // vertical line
             Square square = get_piece(Coordinate{file, rank});
