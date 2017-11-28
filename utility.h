@@ -1,5 +1,8 @@
 #include <functional>
 #include <cstdint>
+#include <iostream>
+#include <string>
+#define DEBUG(message) debug_out(__FUNCTION__, message)
 /**
  * Defines the different type of pieces
  */
@@ -58,6 +61,9 @@ enum class MoveType : std::uint8_t
 // TODO also create |= and &= operator definitions
 MoveType operator| (MoveType a, MoveType b);
 MoveType operator& (MoveType a, MoveType b);
+
+void debug_out(const char function_name[], const char message[]);
+void debug_out(const char function_name[], std::string message);
 
 
 

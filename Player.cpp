@@ -13,6 +13,9 @@ Player::Player(std::string name, Board& chessboard, Color color)
 void Player::make_valid_move(Move move)
 {
 
+    std::cout << move;
+    _chessboard.move(move.source, move.destination);
+
 }
 // TODO add history to parameter
 void Player::make_move(std::string move_notation)
@@ -37,11 +40,12 @@ void Player::make_move(std::string move_notation)
 
 bool Player::verify_move(Move move)
 {
-    throw std::exception();
+    //throw std::exception();
 
     // TODO check check
     // TODO check checkmate
     // TODO check castles
+    return true;
 }
 
 // destination and moving piece must be filled in
@@ -59,6 +63,7 @@ Move Player::fill_move(Move partial_move)
         // If neither source file nor source rank is specified
         if (partial_move.source.file < 0 && partial_move.source.rank < 0)
         {
+            DEBUG("no source specified");
             if (partial_move.piece_type == PieceType::None)
             {
                 // throw
@@ -66,6 +71,7 @@ Move Player::fill_move(Move partial_move)
             }
             if (potential_sources.size() == 1)
             {
+                DEBUG("in happy case");
                 partial_move.source = potential_sources.front();
             }
             else
@@ -76,6 +82,7 @@ Move Player::fill_move(Move partial_move)
         // If only source file is specified
         else if (partial_move.source.file >= 0 && partial_move.source.rank < 0)
         {
+            DEBUG("source file specified");
             std::vector<Coordinate>::iterator it = potential_sources.begin();
             Coordinate source_square;
             bool found_matching_coordinate = false;
@@ -107,6 +114,7 @@ Move Player::fill_move(Move partial_move)
         // If only source rank is specified
         else if (partial_move.source.file < 0 && partial_move.source.rank >= 0)
         {
+            DEBUG("source rank specified");
             std::vector<Coordinate>::iterator it = potential_sources.begin();
             Coordinate source_square;
             bool found_matching_coordinate = false;
@@ -138,6 +146,7 @@ Move Player::fill_move(Move partial_move)
         // If both source file and source rank are specified
         else
         {
+            DEBUG("both source file and rank specified");
             std::vector<Coordinate>::iterator it = potential_sources.begin();
             Coordinate source_square;
             bool found_matching_coordinate = false;
@@ -167,6 +176,8 @@ Move Player::fill_move(Move partial_move)
             }
         }
     }
+
+    return partial_move;
 }
 
 /**
@@ -186,8 +197,8 @@ bool Player::is_clear_path(Coordinate source, Coordinate destination)
     int file_difference = destination.file - source.file;
     int rank_difference = destination.rank - source.rank;
 
-    int file_direction = file_difference / std::abs(file_difference);
-    int rank_direction = rank_difference / std::abs(rank_difference);
+    int file_direction = file_difference == 0 ? 0 : file_difference / std::abs(file_difference);
+    int rank_direction = rank_difference == 0 ? 0 : rank_difference / std::abs(rank_difference);
 
     int path_file = source.file + file_direction;
     int path_rank = source.rank + rank_direction;
@@ -229,6 +240,8 @@ std::vector<Coordinate> Player::get_source_squares(Coordinate destination, Piece
             actual_sources.push_back(potential_source);
         }
     }
+
+    return actual_sources;
 }
 
 /**
@@ -313,9 +326,12 @@ bool Player::is_valid_knight_move(Coordinate source, Coordinate destination)
     int file_distance = std::abs(destination.file - source.file);
     int rank_distance = std::abs(destination.rank - source.rank);
 
+    std::string debug_message = std::to_string(file_distance) + ", " + std::to_string(rank_distance);
+    DEBUG(debug_message);
     if ((file_distance != 0 && rank_distance != 0) &&
         (file_distance + rank_distance == 3))
     {
+        DEBUG("in happy path");
         return true;
     }
     else
@@ -479,6 +495,7 @@ bool Player::is_valid_move(PieceType moving_piece, Coordinate source, Coordinate
     }
 
     bool empty_destination = !_chessboard.get_piece(destination).occupied;
+    DEBUG(std::to_string(empty_destination));
     return is_valid && empty_destination;
 }
 

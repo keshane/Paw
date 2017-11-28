@@ -46,6 +46,7 @@ private:
 namespace Parser
 {
     Move parse_algebraic_notation(std::string notation);
+    // TODO move this to Parser.cpp 
     namespace
     {
         Move parse_normal_move(std::string notation);
@@ -71,7 +72,7 @@ public:
     Player(std::string name, Board& chessboard, Color color);
 
 private:
-    Board _chessboard;
+    Board& _chessboard;
     std::string _name;
     Color _color;
     bool make_pawn_move(Move pawn_move);

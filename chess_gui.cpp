@@ -23,8 +23,10 @@ int main(int argc, char *argv[]) {
             continue;
         if (move == "exit")
             break;
-        if (move == "board")
+        if (move == "board") {
             game.print_board();
+            continue;
+        }
         if (game.enter_move(move)) {
             game.print_board();
         }

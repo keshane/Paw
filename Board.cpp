@@ -50,10 +50,17 @@ Board::Board()
     _board[7][6] = Square{true, Piece{PieceType::Pawn, Color::Black}};
 }
 bool Board::move(Coordinate source, Coordinate destination) {
+    Square source_square = get_piece(source);
 
-    if (get_piece(source).piece.piece_type == PieceType::None) {
+    if (source_square.occupied) {
         // TODO save history
-        _board[destination.file][destination.rank] = get_piece(source);
+        _board[source.file][source.rank].occupied = false;
+        _board[source.file][source.rank].piece.piece_type = PieceType::None;
+        _board[source.file][source.rank].piece.color = Color::None;
+        _board[destination.file][destination.rank] = Square{true, source_square.piece};
+        print_board();
+        DEBUG("happy path");
+        DEBUG(std::string("source occupied: " + std::to_string(_board[source.file][source.rank].occupied)));
         return true;
     }
     else {
@@ -62,7 +69,7 @@ bool Board::move(Coordinate source, Coordinate destination) {
 }
 
 Square Board::get_piece(Coordinate square) {
-    if (square.file >= 0 && square.rank < 8) {
+    if (square.file >= 0 && square.file < 8 && square.rank >= 0 && square.rank < 8) {
         return _board[square.file][square.rank];
     }
     else

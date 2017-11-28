@@ -3,6 +3,14 @@
 
 namespace Parser
 {
+/**
+ * Parses a valid chess algebraic notation string into a Move struct.
+ * 
+ * @param notation a valid algebraic notation for a move
+ * @return a Move that contains all the information represented in the notation
+ * 
+ * @throws TODO if notation is not valid
+ */
 Move parse_algebraic_notation(std::string notation)
 {
     Move parsed_move;
@@ -47,6 +55,12 @@ Move parse_algebraic_notation(std::string notation)
 // TODO use substring
 namespace
 {
+/**
+ * Parses algebraic notation that represents a non-castle, non-(en passant), non-promotion move.
+ * 
+ * @param notation a valid algebraic notation for a move
+ * @return a Move that contains all the information represented in the notation
+ */
 Move parse_normal_move(std::string notation)
 {
     if (notation.back() >= '1' && notation.back() <= '8')
@@ -61,6 +75,12 @@ Move parse_normal_move(std::string notation)
     }
 }
 
+/**
+ * Parses algebraic notation whose last character represents the rank of the destination square.
+ * 
+ * @param notation a valid algebraic notation for a move
+ * @return a Move that contains all the information represented in the notation
+ */
 Move parse_destination_rank(std::string notation)
 {
     char destination_rank = notation.back() - '1';
@@ -78,6 +98,12 @@ Move parse_destination_rank(std::string notation)
     }
 }
 
+/**
+ * Parses algebraic notation whose last character represents the file of the destination square.
+ * 
+ * @param notation a valid partial algebraic notation for a move
+ * @return a Move that contains all the information represented in the partial notation
+ */
 Move parse_destination_file(std::string notation)
 {
     char destination_file = notation.back() - 'a';
@@ -114,6 +140,12 @@ Move parse_destination_file(std::string notation)
     return parsed_move;
 }
 
+/**
+ * Parses algebraic notation whose last character represents a capture.
+ * 
+ * @param notation a valid partial algebraic notation for a move
+ * @return a Move that contains all the information represented in the partial notation
+ */ 
 Move parse_capture(std::string notation)
 {
     notation.pop_back();

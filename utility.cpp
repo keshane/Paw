@@ -21,3 +21,13 @@ MoveType operator|(MoveType a, MoveType b)
 {
     return static_cast<MoveType>(static_cast<std::uint8_t>(a) | static_cast<std::uint8_t>(b));
 }
+
+void debug_out(const char function_name[], const char message[])
+{
+    std::cout << function_name << ": " << message << std::endl;
+}
+
+void debug_out(const char function_name[], std::string message)
+{
+    std::cout << function_name << ": " << message << std::endl;
+}
