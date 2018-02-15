@@ -46,17 +46,7 @@ private:
 namespace Parser
 {
     Move parse_algebraic_notation(std::string notation);
-    // TODO move this to Parser.cpp 
-    namespace
-    {
-        Move parse_normal_move(std::string notation);
-        Move parse_destination_rank(std::string notation);
-        Move parse_destination_file(std::string notation);
-        Move parse_capture(std::string notation);
-        Move parse_moving_piece(std::string notation);
-        Move parse_source_rank(std::string notation);
-        Move parse_source_file(std::string notation);
-    }
+
 }
 
 
@@ -66,6 +56,7 @@ namespace Parser
 /**
  * Represents a player to make the moves on the chessboard.
  */
+ // TODO subclass white and black
 class Player {
 public:
     void make_move(std::string move);
@@ -87,6 +78,8 @@ private:
 
     bool verify_move(Move move);
     void make_valid_move(Move move);
+
+    bool is_attacked(Coordinate destination, Board& verification_board);
 
     // TODO change signature
     bool is_valid_move(PieceType moving_piece, Coordinate source, Coordinate destination);

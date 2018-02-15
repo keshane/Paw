@@ -58,9 +58,9 @@ bool Board::move(Coordinate source, Coordinate destination) {
         _board[source.file][source.rank].piece.piece_type = PieceType::None;
         _board[source.file][source.rank].piece.color = Color::None;
         _board[destination.file][destination.rank] = Square{true, source_square.piece};
-        print_board();
+        //print_board();
         DEBUG("happy path");
-        DEBUG(std::string("source occupied: " + std::to_string(_board[source.file][source.rank].occupied)));
+        //DEBUG(std::string("source occupied: " + std::to_string(_board[source.file][source.rank].occupied)));
         return true;
     }
     else {

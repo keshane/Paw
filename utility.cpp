@@ -31,3 +31,18 @@ void debug_out(const char function_name[], std::string message)
 {
     std::cout << function_name << ": " << message << std::endl;
 }
+
+Color opposite_color(Color color)
+{
+    switch (color)
+    {
+    case Color::Black:
+        return Color::White;
+        break;
+    case Color::White:
+        return Color::Black;
+    default:
+        return Color::None;
+        break;
+    }
+}

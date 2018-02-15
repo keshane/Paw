@@ -62,6 +62,8 @@ enum class MoveType : std::uint8_t
 MoveType operator| (MoveType a, MoveType b);
 MoveType operator& (MoveType a, MoveType b);
 
+Color opposite_color(Color color);
+
 void debug_out(const char function_name[], const char message[]);
 void debug_out(const char function_name[], std::string message);
 

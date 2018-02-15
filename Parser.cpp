@@ -3,6 +3,20 @@
 
 namespace Parser
 {
+
+/**
+ * Helper methods for parse_algebraic_notation()
+ */
+    namespace
+    {
+        Move parse_normal_move(std::string notation);
+        Move parse_destination_rank(std::string notation);
+        Move parse_destination_file(std::string notation);
+        Move parse_capture(std::string notation);
+        Move parse_moving_piece(std::string notation);
+        Move parse_source_rank(std::string notation);
+        Move parse_source_file(std::string notation);
+    }
 /**
  * Parses a valid chess algebraic notation string into a Move struct.
  * 
@@ -176,6 +190,12 @@ Move parse_capture(std::string notation)
     return parsed_move;
 }
 
+/**
+ * Parses algebraic notation whose last character represents the rank of the source square.
+ * 
+ * @param notation a valid partial algebraic notation for a move
+ * @return a Move that contains all the information represented in the partial notation
+ */
 Move parse_source_rank(std::string notation)
 {
     char source_rank = notation.back() - '1';
@@ -204,6 +224,12 @@ Move parse_source_rank(std::string notation)
     return parsed_move;
 }
 
+/**
+ * Parses algebraic notation whose last character represents the file of the source square.
+ * 
+ * @param notation a valid partial algebraic notation for a move
+ * @return a Move that contains all the information represented in the partial notation
+ */
 Move parse_source_file(std::string notation)
 {
     char source_file = notation.back() - 'a';
@@ -229,6 +255,12 @@ Move parse_source_file(std::string notation)
     return parsed_move;
 }
 
+/**
+ * Parses algebraic notation whose last character represents a chess piece.
+ * 
+ * @param notation a valid partial algebraic notation for a move
+ * @return a Move that contains all the information represented in the partial notation
+ */
 Move parse_moving_piece(std::string notation)
 {
     std::unordered_map<char, PieceType> piece_from_notation =

@@ -1,9 +1,10 @@
 #include <exception>
 #include <cmath>
 #include <string>
+#include <cassert>
 #include "chess_gui.h"
 
-Player::Player(std::string name, Board& chessboard, Color color)
+Player::Player(std::string name, Board &chessboard, Color color)
     : _name(name), _chessboard(chessboard), _color(color)
 {
     _en_passant_rank = (color == Color::White ? 4 : 3);
@@ -15,7 +16,6 @@ void Player::make_valid_move(Move move)
 
     std::cout << move;
     _chessboard.move(move.source, move.destination);
-
 }
 // TODO add history to parameter
 void Player::make_move(std::string move_notation)
@@ -26,6 +26,10 @@ void Player::make_move(std::string move_notation)
 
     final_move = fill_move(final_move);
 
+    // TODO remove after debugging
+    assert(final_move.source.file >= 0);
+    assert(final_move.source.rank >= 0);
+
     bool is_valid_move = verify_move(final_move);
 
     if (is_valid_move)
@@ -34,24 +38,142 @@ void Player::make_move(std::string move_notation)
     }
     else
     {
+        DEBUG("invalid move");
+        throw std::logic_error("invalid move");
         // throw
     }
+}
+
+bool Player::is_attacked(Coordinate destination, Board &verification_board)
+{
+    for (int file = 0; file < 8; file++)
+    {
+        for (int rank = 0; rank < 8; rank++)
+        {
+            Square square = verification_board.get_piece(Coordinate{file, rank});
+            if (square.occupied && (square.piece.color == opposite_color(verification_board.get_piece(destination).piece.color)))
+            {
+                // TODO a hack. refactor is_valid_pawn_move to make this cleaner
+                bool is_check = is_valid_capture(Coordinate{file, rank}, destination);
+
+                if (is_check)
+                {
+                    std::string message = std::to_string(file) + ", " + std::to_string(rank);
+                    std::string destination_string = std::to_string(destination.file) + ", " + std::to_string(destination.rank);
+                    DEBUG(message);
+                    DEBUG(destination_string);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 bool Player::verify_move(Move move)
 {
     //throw std::exception();
+    Board verification_board = _chessboard;
+    Coordinate king_location;
 
-    // TODO check check
+    if ((bool)(move.move_type & MoveType::Normal))
+    {
+        verification_board.move(move.source, move.destination);
+        for (int file = 0; file < 8; file++)
+        {
+            for (int rank = 0; rank < 8; rank++)
+            {
+                Square square = verification_board.get_piece(Coordinate{file, rank});
+                if (square.occupied &&
+                    square.piece.piece_type == PieceType::King &&
+                    square.piece.color == _color)
+                {
+                    king_location = Coordinate{file, rank};
+                }
+            }
+        }
+    }
+    else if ((bool)(move.move_type & MoveType::Kingside_Castle))
+    {
+        Coordinate intermediate_location = {move.source.file + 1, move.source.rank};
+        verification_board.move(move.source, intermediate_location);
+        if (is_attacked(intermediate_location, verification_board))
+        {
+            return false;
+        }
+        verification_board.move(intermediate_location, move.destination);
+        king_location = move.destination;
+    }
+    else if ((bool)(move.move_type & MoveType::Queenside_Castle))
+    {
+        Coordinate intermediate_location = {move.source.file - 1, move.source.rank};
+        verification_board.move(move.source, intermediate_location);
+        if (is_attacked(intermediate_location, verification_board))
+        {
+            return false;
+        }
+
+        Coordinate second_intermediate_location = {move.source.file - 2, move.source.rank};
+        verification_board.move(intermediate_location, second_intermediate_location);
+        if (is_attacked(intermediate_location, verification_board))
+        {
+            return false;
+        }
+        verification_board.move(move.source, move.destination);
+        king_location = move.destination;
+    }
+    if (is_attacked(king_location, verification_board))
+    {
+        std::string king_loc_string = std::to_string(king_location.file) + ", " + std::to_string(king_location.rank);
+        DEBUG(king_loc_string);
+        return false;
+    }
     // TODO check checkmate
-    // TODO check castles
+
+    if ((bool) (move.move_type & MoveType::Kingside_Castle))
+    {
+        // TODO check for past history of castle and king or rook moves 
+        // TODO different classes for black and white players
+        if (_color == Color::White)
+        {
+           if (!is_clear_path(Coordinate{4, 0}, Coordinate{7, 0}))
+           {
+               return false; 
+           }
+        }
+        else if (_color == Color::Black)
+        {
+            if (!is_clear_path(Coordinate{4, 7}, Coordinate{7, 7}))
+            {
+                return false;
+            }
+        }
+    }
+    else if ((bool) (move.move_type & MoveType::Queenside_Castle))
+    {
+        if (_color == Color::White)
+        {
+           if (!is_clear_path(Coordinate{4, 0}, Coordinate{0, 0}))
+           {
+               return false; 
+           }
+        }
+        else if (_color == Color::Black)
+        {
+            if (!is_clear_path(Coordinate{4, 7}, Coordinate{0, 7}))
+            {
+                return false;
+            }
+        }
+
+    }
     return true;
 }
 
 // destination and moving piece must be filled in
 Move Player::fill_move(Move partial_move)
 {
-    if ((bool) (partial_move.move_type & MoveType::Normal))
+    if ((bool)(partial_move.move_type & MoveType::Normal))
     {
         if (_chessboard.get_piece(partial_move.destination).piece.piece_type != PieceType::None)
         {
@@ -73,9 +195,13 @@ Move Player::fill_move(Move partial_move)
             {
                 DEBUG("in happy case");
                 partial_move.source = potential_sources.front();
+                DEBUG(std::to_string(partial_move.source.file));
+                DEBUG(std::to_string(partial_move.source.rank));
             }
             else
             {
+                throw std::logic_error("ambiguous notation");
+                DEBUG("in bad case");
                 // throw
             }
         }
@@ -93,6 +219,7 @@ Move Player::fill_move(Move partial_move)
                     source_square = *it;
                     if (found_matching_coordinate)
                     {
+                        throw std::logic_error("ambiguous notation");
                         // throw - more than one possible source, so notation is ambiguous
                     }
                     else
@@ -108,6 +235,7 @@ Move Player::fill_move(Move partial_move)
             }
             else
             {
+                throw std::logic_error("no such possible move");
                 // throw
             }
         }
@@ -125,6 +253,7 @@ Move Player::fill_move(Move partial_move)
                     source_square = *it;
                     if (found_matching_coordinate)
                     {
+                        throw std::logic_error("ambiguous notation");
                         // throw - more than one possible source, so notation is ambiguous
                     }
                     else
@@ -140,6 +269,7 @@ Move Player::fill_move(Move partial_move)
             }
             else
             {
+                throw std::logic_error("no such possible move");
                 // throw
             }
         }
@@ -157,6 +287,7 @@ Move Player::fill_move(Move partial_move)
                     source_square = *it;
                     if (found_matching_coordinate)
                     {
+                        throw std::logic_error("ambiguous notation");
                         // throw - more than one possible source, so notation is ambiguous
                     }
                     else
@@ -172,6 +303,7 @@ Move Player::fill_move(Move partial_move)
             }
             else
             {
+                throw std::logic_error("no such possible move");
                 // throw
             }
         }
@@ -216,7 +348,6 @@ bool Player::is_clear_path(Coordinate source, Coordinate destination)
     return true;
 }
 
-
 std::vector<Coordinate> Player::get_source_squares(Coordinate destination, PieceType piece_type)
 {
     std::vector<Coordinate> potential_sources;
@@ -232,10 +363,12 @@ std::vector<Coordinate> Player::get_source_squares(Coordinate destination, Piece
         }
     }
 
+    DEBUG(std::to_string(potential_sources.size()));
+
     std::vector<Coordinate> actual_sources;
     for (Coordinate &potential_source : potential_sources)
     {
-        if (is_valid_move(piece_type, potential_source, destination))
+        if (is_valid_move(piece_type, potential_source, destination) || is_valid_capture(potential_source, destination))
         {
             actual_sources.push_back(potential_source);
         }
@@ -264,16 +397,22 @@ bool Player::is_valid_capture(Coordinate source, Coordinate destination)
     {
     case PieceType::Pawn:
         is_valid_capture = is_valid_pawn_capture(source, destination);
+        break;
     case PieceType::Rook:
         is_valid_capture = is_valid_rook_move(source, destination);
+        break;
     case PieceType::Knight:
         is_valid_capture = is_valid_knight_move(source, destination);
+        break;
     case PieceType::Bishop:
         is_valid_capture = is_valid_bishop_move(source, destination);
+        break;
     case PieceType::Queen:
         is_valid_capture = is_valid_queen_move(source, destination);
+        break;
     case PieceType::King:
         is_valid_capture = is_valid_king_move(source, destination);
+        break;
     default:
         // TODO throw
         break;
@@ -281,8 +420,7 @@ bool Player::is_valid_capture(Coordinate source, Coordinate destination)
 
     if (is_valid_capture &&
         destination_square.occupied &&
-        destination_square.piece.color != Color::None &&
-        destination_square.piece.color != _color)
+        destination_square.piece.color != Color::None)
     {
         return true;
     }
@@ -396,8 +534,8 @@ bool Player::is_valid_queen_move(Coordinate source, Coordinate destination)
  */
 bool Player::is_valid_king_move(Coordinate source, Coordinate destination)
 {
-    bool file_difference = destination.file - source.file;
-    bool rank_difference = destination.rank - source.rank;
+    int file_difference = destination.file - source.file;
+    int rank_difference = destination.rank - source.rank;
     int file_distance = std::abs(file_difference);
     int rank_distance = std::abs(rank_difference);
 
@@ -416,6 +554,7 @@ bool Player::is_valid_king_move(Coordinate source, Coordinate destination)
 
 /**
  * Determines whether a pawn can make a move between two squares.
+ * // TODO refactor to take in color
  * 
  * @param source the starting square of the pawn
  * @param destination the ending square for the pawn
@@ -429,14 +568,14 @@ bool Player::is_valid_pawn_move(Coordinate source, Coordinate destination)
         return false;
     }
     bool is_same_file = (destination.file == source.file);
-    int move_direction = rank_difference / std::abs(rank_difference); 
+    int move_direction = rank_difference / std::abs(rank_difference);
     bool is_correct_direction = (move_direction == _direction);
 
-    if (rank_difference == 1)
+    if (std::abs(rank_difference) == 1)
     {
         return is_same_file && is_correct_direction;
     }
-    else if (rank_difference == 2)
+    else if (std::abs(rank_difference) == 2)
     {
         bool is_correct_starting_rank = false;
         if (_color == Color::Black)
