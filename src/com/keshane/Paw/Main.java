@@ -25,6 +25,10 @@ public class Main {
                     System.out.println("Quitting...");
                     break;
                 }
+                else if (move.equalsIgnoreCase("history")) {
+                    game.printHistory();
+                    continue;
+                }
                 game.makeMove(move);
             }
             catch (ParseException exception) {

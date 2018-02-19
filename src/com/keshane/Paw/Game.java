@@ -16,27 +16,34 @@ public class Game {
 
     Game(String whiteName, String blackName) {
         board = new Board(Board.Configuration.NORMAL);
-        whitePlayer = new Player(whiteName, Color.WHITE);
-        blackPlayer = new Player(blackName, Color.BLACK);
+        whitePlayer = new Player(whiteName, Color.WHITE, new Player.WhiteStandardLogic());
+        blackPlayer = new Player(blackName, Color.BLACK, new Player.BlackStandardLogic());
         currentTurn = Color.WHITE;
         history = new Move.History();
     }
 
     void makeMove(String notation) throws ParseException, NoSuchMoveException, AmbiguousNotationException {
+        Move move;
         if (currentTurn == Color.WHITE) {
-            whitePlayer.makeMove(notation, history, board);
+            move = whitePlayer.makeMove(notation, history, board);
             currentTurn = Color.BLACK;
         }
         else {
-            blackPlayer.makeMove(notation, history, board);
+            move = blackPlayer.makeMove(notation, history, board);
             currentTurn = Color.WHITE;
         }
+
+        history.add(move);
     }
 
     void printBoard() {
         System.out.println("BLACK: " + blackPlayer.getName());
         System.out.println(board.toString());
         System.out.println("WHITE: " + whitePlayer.getName());
+    }
+
+    void printHistory() {
+        System.out.println(history.toString());
     }
 
 

@@ -36,15 +36,8 @@ class Parser {
 
     // TODO consider using StringBuilder
     private void parseFullNotation(String notation) throws ParseException {
-        if (notation.equalsIgnoreCase(Parser.KINGSIDE_CASTLE_OHS) || notation.equalsIgnoreCase(KINGSIDE_CASTLE_ZEROES)) {
-            move.addType(Move.Type.KINGSIDE_CASTLE);
-            return;
-        }
-        else if (notation.equalsIgnoreCase(Parser.QUEENSIDE_CASTLE_OHS) || notation.equalsIgnoreCase(Parser.QUEENSIDE_CASTLE_ZEROES)) {
-            move.addType(Move.Type.QUEENSIDE_CASTLE);
-            return;
-        }
 
+        // First, parse away unnecessary information
         if (notation.endsWith("+")) {
             move.addType(Move.Type.CHECK);
             notation = notation.substring(0, notation.length() - 1);
@@ -54,7 +47,15 @@ class Parser {
             notation = notation.substring(0, notation.length() - 1);
         }
 
-        if (notation.endsWith(Parser.EN_PASSANT)) {
+        if (notation.equalsIgnoreCase(Parser.KINGSIDE_CASTLE_OHS) || notation.equalsIgnoreCase(KINGSIDE_CASTLE_ZEROES)) {
+            move.addType(Move.Type.KINGSIDE_CASTLE);
+            return;
+        }
+        else if (notation.equalsIgnoreCase(Parser.QUEENSIDE_CASTLE_OHS) || notation.equalsIgnoreCase(Parser.QUEENSIDE_CASTLE_ZEROES)) {
+            move.addType(Move.Type.QUEENSIDE_CASTLE);
+            return;
+        }
+        else if (notation.endsWith(Parser.EN_PASSANT)) {
             move.addType(Move.Type.EN_PASSANT);
             notation = notation.substring(0, notation.length() - 1);
         }
@@ -107,6 +108,7 @@ class Parser {
 
     private void parseLastSymbol(String notation) throws ParseException {
         if (notation.length() == 0) {
+            move.setPieceType(Piece.Type.PAWN);
             return;
         }
         char symbol = notation.charAt(notation.length() - 1);

@@ -2,6 +2,7 @@ package com.keshane.Paw;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 
 final class Move {
@@ -45,6 +46,14 @@ final class Move {
         return destinationRank;
     }
 
+    Board.Coordinate getDestination() {
+        return new Board.Coordinate(destinationFile, destinationRank);
+    }
+
+    Board.Coordinate getSource() {
+        return new Board.Coordinate(sourceFile, sourceRank);
+    }
+
 
     EnumSet<Type> getTypes() {
         return EnumSet.copyOf(this.types);
@@ -54,6 +63,17 @@ final class Move {
         return player;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(pieceType.getNotation());
+        stringBuilder.append((char)('a' + sourceFile));
+        stringBuilder.append((char)('1' + sourceRank));
+        stringBuilder.append((char)('a' + destinationFile));
+        stringBuilder.append((char)('1' + destinationRank));
+
+        return stringBuilder.toString();
+    }
 
     Piece.Type getPieceType() {
         return pieceType;
@@ -190,6 +210,24 @@ final class Move {
             return new Move(this);
         }
 
+        void setDestination(Board.Coordinate destination) {
+            destinationFile = destination.file();
+            destinationRank = destination.rank();
+        }
+
+        Board.Coordinate getDestination() {
+            return new Board.Coordinate(destinationFile, destinationRank);
+        }
+
+        void setSource(Board.Coordinate source) {
+            sourceFile = source.file();
+            sourceRank = source.rank();
+        }
+
+        Board.Coordinate getSource() {
+            return new Board.Coordinate(sourceFile, sourceRank);
+        }
+
         int getDestinationFile() {
             return destinationFile;
         }
@@ -204,6 +242,10 @@ final class Move {
 
         int getSourceRank() {
             return sourceRank;
+        }
+
+        Color getPlayer() {
+            return player;
         }
 
         EnumSet<Type> getTypes() {
@@ -258,6 +300,26 @@ final class Move {
 
         int getHalfMoveNumber() {
             return history.size();
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder stringBuilder = new StringBuilder();
+            Iterator<Move> iterator = history.iterator();
+
+            for (int moveNumber = 1; moveNumber <= getFullMoveNumber(); moveNumber++) {
+                stringBuilder.append(moveNumber);
+                stringBuilder.append(": ");
+                stringBuilder.append(String.format("%1$-9s",iterator.next().toString()));
+                if (iterator.hasNext()) {
+                    stringBuilder.append(iterator.next().toString());
+                }
+
+                stringBuilder.append("\n");
+            }
+
+            return stringBuilder.toString();
+
         }
 
     }

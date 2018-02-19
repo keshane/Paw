@@ -1,18 +1,20 @@
 package com.keshane.Paw;
 
 import java.text.ParseException;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 class Player {
     private final String name;
     private final Color color;
     private final Logic variantLogic;
 
-    Player(String name, Color color) {
+    Player(String name, Color color, Logic variantLogic) {
         this.name = name;
         this.color = color;
-        this.variantLogic = new Player.StandardLogic(color); // TODO
+        this.variantLogic = variantLogic; // TODO
 
     }
 
@@ -24,52 +26,56 @@ class Player {
         return variantLogic;
     }
 
-    void makeMove(String notation, Move.History moveHistory, Board board) throws ParseException,
+    Move makeMove(String notation, Move.History moveHistory, Board board) throws ParseException,
             NoSuchMoveException, AmbiguousNotationException {
         Parser notationParser = new Parser(notation);
         Move.Builder move = notationParser.getMove();
-        variantLogic.makeMove(move, moveHistory, board);
+        move.setPlayer(color);
+        Move executedMove = variantLogic.makeMove(move, moveHistory, board);
+        return executedMove;
         // TODO
     }
 
-    static class StandardLogic implements Logic {
-        private final Color color;
-
-        private StandardLogic(Color color) {
-            this.color = color;
+    static abstract class StandardLogic implements Logic {
+        private StandardLogic() {
         }
 
         @Override
-        public void makeMove(Move.Builder partialMove, Move.History moveHistory, Board board)
-        throws NoSuchMoveException, AmbiguousNotationException {
+        public Move makeMove(Move.Builder partialMove, Move.History moveHistory, Board board)
+                throws NoSuchMoveException, AmbiguousNotationException {
             Move fullMove = buildMove(partialMove, board);
             executeMove(fullMove, board);
+
+            return fullMove;
         }
 
         private void executeMove(Move move, Board board) {
-            if (move.getTypes().contains(Move.Type.NORMAL)) {
-                Piece piece = board.removePiece(new Board.Coordinate(move.getSourceFile(), move
-                        .getSourceRank()));
-                board.placePiece(piece, new Board.Coordinate(move.getDestinationFile(), move
-                        .getDestinationRank()));
+            EnumSet<Move.Type> moveTypes = move.getTypes();
+            if (moveTypes.contains(Move.Type.NORMAL)) {
+                Piece piece = board.removePiece(move.getSource());
+                if (moveTypes.contains(Move.Type.CAPTURE)) {
+                    board.removePiece(move.getDestination());
+                }
+                board.placePiece(piece, move.getDestination());
+            }
+            else if (moveTypes.contains(Move.Type.KINGSIDE_CASTLE)) {
+                // TODO
             }
         }
 
         private Move buildMove(Move.Builder partialMove, Board board) throws NoSuchMoveException,
                 AmbiguousNotationException {
-            if (partialMove.getSourceFile() < 0 && partialMove.getSourceRank() < 0) {
-                Board.Coordinate source = findSourceSquare(partialMove, board);
-                partialMove.setSourceFile(source.file());
-                partialMove.setSourceRank(source.rank());
-            }
+            Board.Coordinate source = findSourceSquare(partialMove, board);
+            partialMove.setSourceFile(source.file());
+            partialMove.setSourceRank(source.rank());
 
             return partialMove.build();
         }
 
         private Board.Coordinate findSourceSquare(Move.Builder partialMove, Board board) throws
-                NoSuchMoveException, AmbiguousNotationException{
+                NoSuchMoveException, AmbiguousNotationException {
             Set<Board.Coordinate> locationsOfPieceType = board.getLocationsOfPiece(partialMove
-                    .getPieceType(), color);
+                    .getPieceType(), partialMove.getPlayer());
 
             Set<Board.Coordinate> possibleSourceSquares = new HashSet<>();
             for (Board.Coordinate source : locationsOfPieceType) {
@@ -77,24 +83,45 @@ class Player {
                     possibleSourceSquares.add(source);
                 }
             }
+
+
             if (possibleSourceSquares.size() == 0) {
                 // no possible moves
                 throw new NoSuchMoveException("Piece " + partialMove.getPieceType().toString
                         () + " cannot reach the destination square.");
             }
-            if (possibleSourceSquares.size() > 1) {
+            int expectedSourceFile = partialMove.getSourceFile();
+            int expectedSourceRank = partialMove.getSourceRank();
+
+            Set<Board.Coordinate> filteredSourceSquares = possibleSourceSquares;
+            if (expectedSourceFile > 0) {
+                filteredSourceSquares = filteredSourceSquares.stream().filter(coordinate -> coordinate
+                        .file() == expectedSourceFile).collect(Collectors.toSet());
+            }
+
+            if (expectedSourceRank > 0) {
+                filteredSourceSquares = filteredSourceSquares.stream().filter(coordinate ->
+                        coordinate.rank() == expectedSourceRank).collect(Collectors.toSet());
+            }
+
+            if (filteredSourceSquares.size() > 1) {
                 // ambiguous notation
-                 throw new AmbiguousNotationException("Ambiguous notation - multiple pieces " +
-                         partialMove.getPieceType().toString() + " can reach the destination " +
-                         "square");
+                throw new AmbiguousNotationException("Ambiguous notation - multiple pieces " +
+                        partialMove.getPieceType().toString() + " can reach the destination " +
+                        "square");
                 // check for possibility of check
             }
 
-            return possibleSourceSquares.iterator().next();
+            if (filteredSourceSquares.size() == 0) {
+                // no possible moves
+                throw new NoSuchMoveException("Piece " + partialMove.getPieceType().toString
+                        () + "  on specified file o rank cannot reach the destination square.");
+            }
+            return filteredSourceSquares.iterator().next();
         }
 
         private boolean isValidKingMove(Board.Coordinate source, Board.Coordinate
-                destination, Board board) {
+                destination) {
             int fileDistance = Math.abs(destination.file() - source.file());
             int rankDistance = Math.abs(destination.rank() - source.rank());
 
@@ -135,11 +162,8 @@ class Player {
         }
 
 
-        private boolean isValidPawnMove(Board.Coordinate coordinate,
-                                        Board
-                                                board) {
-            return false;
-        }
+        protected abstract boolean isValidPawnMove(Board.Coordinate source, Board.Coordinate
+                destination, Board board);
 
         private boolean isValidMove(Move.Builder partialMove, Board.Coordinate source, Board
                 board) {
@@ -148,14 +172,19 @@ class Player {
 
             if (partialMove.getTypes().contains(Move.Type.CAPTURE)) {
                 if (board.getPiece(destination) == null || board.getPiece(destination).getColor().opposite()
-                        != color) {
+                        != partialMove.getPlayer()) {
+                    return false;
+                }
+            }
+            else if (partialMove.getTypes().contains(Move.Type.NORMAL)) {
+                if (board.getPiece(destination) != null) {
                     return false;
                 }
             }
             boolean isValid = false;
             switch (partialMove.getPieceType()) {
                 case KING:
-                    isValid = isValidKingMove(source, destination, board);
+                    isValid = isValidKingMove(source, destination);
                     break;
                 case QUEEN:
                     isValid = isValidQueenMove(source, destination, board);
@@ -170,16 +199,17 @@ class Player {
                     isValid = isValidBishopMove(source, destination, board);
                     break;
                 case PAWN:
-                    isValid = isValidPawnMove(source, board);
+                    isValid = isValidPawnMove(source, destination, board);
                     break;
                 default:
                     break;
             }
 
+
             return isValid;
         }
 
-        private boolean isClearPath(Board.Coordinate source, Board.Coordinate destination, Board
+        protected boolean isClearPath(Board.Coordinate source, Board.Coordinate destination, Board
                 board) {
             int fileDifference = destination.file() - source.file();
             int rankDifference = destination.rank() - source.rank();
@@ -199,6 +229,58 @@ class Player {
             }
 
             return true;
+        }
+    }
+
+    static class WhiteStandardLogic extends StandardLogic {
+        WhiteStandardLogic() {
+        }
+
+        @Override
+        protected boolean isValidPawnMove(Board.Coordinate source, Board.Coordinate destination,
+                                          Board board) {
+            boolean isValid = false;
+            if (destination.file() == source.file()) {
+                if (destination.rank() - source.rank() == 1) {
+                    isValid = true;
+                }
+
+                if (source.rank() == 1 && destination.rank() - source.rank() == 2 && isClearPath
+                        (source, destination,
+                                board)) {
+                    isValid = true;
+
+                }
+
+            }
+
+            return isValid;
+        }
+    }
+
+    static class BlackStandardLogic extends StandardLogic {
+        BlackStandardLogic() {
+        }
+
+        @Override
+        protected boolean isValidPawnMove(Board.Coordinate source, Board.Coordinate destination,
+                                          Board board) {
+            boolean isValid = false;
+            if (destination.file() == source.file()) {
+                if (destination.rank() - source.rank() == -1) {
+                    isValid = true;
+                }
+
+                if (source.rank() == 6 && destination.rank() - source.rank() == -2 && isClearPath
+                        (source, destination,
+                                board)) {
+                    isValid = true;
+
+                }
+
+            }
+
+            return isValid;
         }
     }
 }
