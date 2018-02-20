@@ -3,6 +3,7 @@ package com.keshane.Paw;
 import java.text.ParseException;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,7 +44,7 @@ class Player {
         @Override
         public Move makeMove(Move.Builder partialMove, Move.History moveHistory, Board board)
                 throws NoSuchMoveException, AmbiguousNotationException {
-            Move fullMove = buildMove(partialMove, board);
+            Move fullMove = buildMove(partialMove, moveHistory, board);
             executeMove(fullMove, board);
 
             return fullMove;
@@ -60,17 +61,37 @@ class Player {
             }
             else if (moveTypes.contains(Move.Type.KINGSIDE_CASTLE)) {
                 // TODO
+                executeKingsideCastle(board);
             }
         }
 
-        private Move buildMove(Move.Builder partialMove, Board board) throws NoSuchMoveException,
+        private Move buildMove(Move.Builder partialMove, Move.History moveHistory, Board board)
+                throws NoSuchMoveException,
                 AmbiguousNotationException {
-            Board.Coordinate source = findSourceSquare(partialMove, board);
-            partialMove.setSourceFile(source.file());
-            partialMove.setSourceRank(source.rank());
+            EnumSet<Move.Type> moveTypes = partialMove.getTypes();
+
+            if (moveTypes.contains(Move.Type.NORMAL)) {
+                Board.Coordinate source = findSourceSquare(partialMove, board);
+                partialMove.setSourceFile(source.file());
+                partialMove.setSourceRank(source.rank());
+            }
+            else if (moveTypes.contains(Move.Type.KINGSIDE_CASTLE)) {
+                isValidKingsideCastle(partialMove, moveHistory, board);
+            }
+            else if (moveTypes.contains(Move.Type.QUEENSIDE_CASTLE)) {
+                isValidQueensideCastle(partialMove, moveHistory, board);
+
+            }
 
             return partialMove.build();
         }
+
+        protected abstract void executeKingsideCastle(Board board);
+        protected abstract boolean isValidKingsideCastle(Move.Builder partialMove, Move
+                .History moveHistory, Board board);
+
+        protected abstract boolean isValidQueensideCastle(Move.Builder partialMove, Move
+                .History moveHistory, Board board);
 
         private Board.Coordinate findSourceSquare(Move.Builder partialMove, Board board) throws
                 NoSuchMoveException, AmbiguousNotationException {
@@ -90,15 +111,18 @@ class Player {
                 throw new NoSuchMoveException("Piece " + partialMove.getPieceType().toString
                         () + " cannot reach the destination square.");
             }
-            int expectedSourceFile = partialMove.getSourceFile();
-            int expectedSourceRank = partialMove.getSourceRank();
+
+            // Narrow down the possible sources by comparing them to the specified source file or
+            // rank from the move input
 
             Set<Board.Coordinate> filteredSourceSquares = possibleSourceSquares;
+            int expectedSourceFile = partialMove.getSourceFile();
             if (expectedSourceFile > 0) {
                 filteredSourceSquares = filteredSourceSquares.stream().filter(coordinate -> coordinate
                         .file() == expectedSourceFile).collect(Collectors.toSet());
             }
 
+            int expectedSourceRank = partialMove.getSourceRank();
             if (expectedSourceRank > 0) {
                 filteredSourceSquares = filteredSourceSquares.stream().filter(coordinate ->
                         coordinate.rank() == expectedSourceRank).collect(Collectors.toSet());
@@ -230,6 +254,16 @@ class Player {
 
             return true;
         }
+
+        protected boolean hasPieceMoved(Board.Coordinate source, Move.History history) {
+            List<Move> historyList = history.getHistory();
+
+            boolean hasMoved = historyList.stream().filter(move -> move.getSource().equals
+                    (source)).collect(Collectors.toList()).size() > 0;
+
+            return hasMoved;
+
+        }
     }
 
     static class WhiteStandardLogic extends StandardLogic {
@@ -256,6 +290,47 @@ class Player {
 
             return isValid;
         }
+
+        @Override
+        protected boolean isValidKingsideCastle(Move.Builder partialMove, Move.History
+                moveHistory, Board board) {
+            Board.Coordinate kingStart = new Board.Coordinate(4, 0);
+            Board.Coordinate rookStart = new Board.Coordinate(7, 0);
+
+            // TODO check history
+            if (isClearPath(kingStart, rookStart, board) && !hasPieceMoved(kingStart,
+                    moveHistory) && !hasPieceMoved(rookStart, moveHistory)) {
+                return true;
+            }
+            else {
+                return false;
+            }
+
+        }
+
+        @Override
+        protected boolean isValidQueensideCastle(Move.Builder partialMove, Move.History
+                moveHistory, Board board) {
+            Board.Coordinate kingStart = new Board.Coordinate(4, 0);
+            Board.Coordinate rookStart = new Board.Coordinate(0, 0);
+
+            // TODO check history
+            if (isClearPath(kingStart, rookStart, board) && !hasPieceMoved(kingStart,
+                    moveHistory) && !hasPieceMoved(rookStart, moveHistory)) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        @Override
+        protected void executeKingsideCastle(Board board) {
+            Piece king = board.removePiece(new Board.Coordinate(4, 0));
+            Piece rook = board.removePiece(new Board.Coordinate(7, 0));
+
+            board.placePiece(king, new Board.Coordinate(6, 0));
+            board.placePiece(rook, new Board.Coordinate(5, 0));
+        }
     }
 
     static class BlackStandardLogic extends StandardLogic {
@@ -281,6 +356,48 @@ class Player {
             }
 
             return isValid;
+        }
+
+        @Override
+        protected boolean isValidKingsideCastle(Move.Builder partialMove, Move.History moveHistory,
+                                                Board board) {
+            Board.Coordinate kingStart = new Board.Coordinate(4, 7);
+            Board.Coordinate rookStart = new Board.Coordinate(7, 7);
+
+            // TODO check history
+            if (isClearPath(kingStart, rookStart, board) && !hasPieceMoved(kingStart,
+                    moveHistory) && !hasPieceMoved(rookStart, moveHistory)) {
+                return true;
+            }
+            else {
+                return false;
+            }
+
+        }
+
+        @Override
+        protected boolean isValidQueensideCastle(Move.Builder partialMove, Move.History
+                moveHistory, Board board) {
+            Board.Coordinate kingStart = new Board.Coordinate(4, 7);
+            Board.Coordinate rookStart = new Board.Coordinate(0, 7);
+
+            // TODO check history
+            if (isClearPath(kingStart, rookStart, board) && !hasPieceMoved(kingStart,
+                    moveHistory) && !hasPieceMoved(rookStart, moveHistory)) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
+                @Override
+        protected void executeKingsideCastle(Board board) {
+            Piece king = board.removePiece(new Board.Coordinate(4, 7));
+            Piece rook = board.removePiece(new Board.Coordinate(7, 7));
+
+            board.placePiece(king, new Board.Coordinate(6, 7));
+            board.placePiece(rook, new Board.Coordinate(5, 7));
         }
     }
 }

@@ -285,6 +285,10 @@ final class Move {
             }
         }
 
+        List<Move> getHistory() {
+            return new ArrayList<>(history);
+        }
+
         Move peekLast() {
             if (history.size() > 0) {
                 return history.get(history.size() - 1);

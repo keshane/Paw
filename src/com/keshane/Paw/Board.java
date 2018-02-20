@@ -177,6 +177,20 @@ public class Board {
         }
 
         @Override
+        public boolean equals(Object second) {
+            if (second == null) {
+                return false;
+            }
+            if (!(second instanceof Board.Coordinate)) {
+                return false;
+            }
+
+            Board.Coordinate secondCoordinate = (Board.Coordinate) second;
+
+            return this.file() == secondCoordinate.file() && this.rank() == secondCoordinate.rank();
+        }
+
+        @Override
         public String toString() {
             return "(" + file + ", " + rank + ")";
         }
