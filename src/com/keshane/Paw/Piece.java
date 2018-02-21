@@ -69,6 +69,10 @@ class Piece {
         representation = stringRepresentations.get(color).get(pieceType);
     }
 
+    Piece(Piece oldPiece) {
+        this(oldPiece.getPieceType(), oldPiece.getColor());
+    }
+
 
     Color getColor() {
         return this.color;

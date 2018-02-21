@@ -28,7 +28,7 @@ class Player {
     }
 
     Move makeMove(String notation, Move.History moveHistory, Board board) throws ParseException,
-            NoSuchMoveException, AmbiguousNotationException {
+            NoSuchMoveException, AmbiguousNotationException, KingInCheckException {
         Parser notationParser = new Parser(notation);
         Move.Builder move = notationParser.getMove();
         move.setPlayer(color);
@@ -38,17 +38,30 @@ class Player {
     }
 
     static abstract class StandardLogic implements Logic {
-        private StandardLogic() {
+        private final Color color;
+
+        private StandardLogic(Color color) {
+            this.color = color;
         }
 
         @Override
         public Move makeMove(Move.Builder partialMove, Move.History moveHistory, Board board)
-                throws NoSuchMoveException, AmbiguousNotationException {
+                throws NoSuchMoveException, AmbiguousNotationException, KingInCheckException {
             Move fullMove = buildMove(partialMove, moveHistory, board);
+
+            // check for checks
+            Board verificationBoard = new Board(board);
+            executeMove(fullMove, verificationBoard);
+            if (isKingInCheck(verificationBoard)) {
+                throw new KingInCheckException("Cannot make this move because the king is in " +
+                        "check");
+            }
+
             executeMove(fullMove, board);
 
             return fullMove;
         }
+
 
         private void executeMove(Move move, Board board) {
             EnumSet<Move.Type> moveTypes = move.getTypes();
@@ -63,6 +76,9 @@ class Player {
                 // TODO
                 executeKingsideCastle(board);
             }
+            else if (moveTypes.contains(Move.Type.QUEENSIDE_CASTLE)) {
+                executeQueensideCastle(board);
+            }
         }
 
         private Move buildMove(Move.Builder partialMove, Move.History moveHistory, Board board)
@@ -76,17 +92,27 @@ class Player {
                 partialMove.setSourceRank(source.rank());
             }
             else if (moveTypes.contains(Move.Type.KINGSIDE_CASTLE)) {
-                isValidKingsideCastle(partialMove, moveHistory, board);
+                boolean isValid = isValidKingsideCastle(partialMove, moveHistory, board);
+                if (!isValid) {
+                    throw new NoSuchMoveException("Cannot castle kingside because there are " +
+                            "pieces in the way or because the king or rook has moved already.");
+                }
             }
             else if (moveTypes.contains(Move.Type.QUEENSIDE_CASTLE)) {
-                isValidQueensideCastle(partialMove, moveHistory, board);
-
+                boolean isValid = isValidQueensideCastle(partialMove, moveHistory, board);
+                if (!isValid) {
+                    throw new NoSuchMoveException("Cannot castle queenside because there are " +
+                            "pieces in the way or because the king or rook has moved already.");
+                }
             }
 
             return partialMove.build();
         }
 
         protected abstract void executeKingsideCastle(Board board);
+
+        protected abstract void executeQueensideCastle(Board board);
+
         protected abstract boolean isValidKingsideCastle(Move.Builder partialMove, Move
                 .History moveHistory, Board board);
 
@@ -113,8 +139,7 @@ class Player {
             }
 
             // Narrow down the possible sources by comparing them to the specified source file or
-            // rank from the move input
-
+            // source rank from the move input
             Set<Board.Coordinate> filteredSourceSquares = possibleSourceSquares;
             int expectedSourceFile = partialMove.getSourceFile();
             if (expectedSourceFile > 0) {
@@ -154,7 +179,7 @@ class Player {
 
         private boolean isValidQueenMove(Board.Coordinate source, Board.Coordinate destination, Board
                 board) {
-            return isValidBishopMove(source, destination, board) && isValidRookMove(source,
+            return isValidBishopMove(source, destination, board) || isValidRookMove(source,
                     destination, board);
         }
 
@@ -245,11 +270,14 @@ class Player {
             int rankPath = source.rank() + rankDirection;
 
             while (!(filePath == destination.file() && rankPath == destination.rank())) {
-                if (board.getPiece(filePath, rankPath) != null) {
+                if (board.getPiece(filePath, rankPath) == null) {
+                    filePath += fileDirection;
+                    rankPath += rankDirection;
+                }
+                else {
                     return false;
                 }
-                filePath += fileDirection;
-                rankPath += rankDirection;
+
             }
 
             return true;
@@ -264,10 +292,56 @@ class Player {
             return hasMoved;
 
         }
+
+        protected boolean isValidCastle(Move.History moveHistory, Board
+                board, Board.Coordinate kingStart, Board.Coordinate rookStart) {
+            return isClearPath(kingStart, rookStart, board) && !hasPieceMoved(kingStart,
+                    moveHistory) && !hasPieceMoved(rookStart, moveHistory);
+        }
+
+        private boolean isKingInCheck(Board board) {
+            Set<Board.Coordinate> kingLocations = board.getLocationsOfPiece(Piece.Type.KING, color);
+            Board.Coordinate kingLocation = kingLocations.iterator().next();
+
+            Set<Board.Coordinate> attackingPieceLocations = new HashSet<>();
+            for (int file = 0; file < 8; file++) {
+                for (int rank = 0; rank < 8; rank++) {
+                    Piece piece = board.getPiece(file, rank);
+                    if (null != piece && piece.getColor() == color.opposite() && piece
+                            .getPieceType() != Piece.Type.KING) {
+                        attackingPieceLocations.add(new Board.Coordinate(file, rank));
+                    }
+                }
+            }
+
+            Move.Builder captureKingMove = new Move.Builder().setDestination(kingLocation)
+                    .addType(Move.Type.CAPTURE).addType(Move.Type.NORMAL).setPlayer(color.opposite());
+
+            for (Board.Coordinate attackingPieceLocation : attackingPieceLocations) {
+                captureKingMove.setPieceType(board.getPiece(attackingPieceLocation).getPieceType());
+                if (isValidMove(captureKingMove, attackingPieceLocation, board)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
     }
 
     static class WhiteStandardLogic extends StandardLogic {
+        private static Board.Coordinate kingStart = new Board.Coordinate(4, 0);
+        private static Board.Coordinate kingRookStart = new Board.Coordinate(7, 0);
+        private static Board.Coordinate queenRookStart = new Board.Coordinate(0, 0);
+
+        private static Board.Coordinate kingsideCastledKingLocation = new Board.Coordinate(6, 0);
+        private static Board.Coordinate queensideCastledKingLocation = new Board.Coordinate(2, 0);
+        private static Board.Coordinate castledKingRookLocation = new Board.Coordinate(5, 0);
+        private static Board.Coordinate castledQueenRookLocation = new Board.Coordinate(3, 0);
+
         WhiteStandardLogic() {
+            super(Color.WHITE);
         }
 
         @Override
@@ -294,47 +368,48 @@ class Player {
         @Override
         protected boolean isValidKingsideCastle(Move.Builder partialMove, Move.History
                 moveHistory, Board board) {
-            Board.Coordinate kingStart = new Board.Coordinate(4, 0);
-            Board.Coordinate rookStart = new Board.Coordinate(7, 0);
-
-            // TODO check history
-            if (isClearPath(kingStart, rookStart, board) && !hasPieceMoved(kingStart,
-                    moveHistory) && !hasPieceMoved(rookStart, moveHistory)) {
-                return true;
-            }
-            else {
-                return false;
-            }
-
+            return super.isValidCastle(moveHistory, board, WhiteStandardLogic.kingStart,
+                    WhiteStandardLogic.kingRookStart);
         }
 
         @Override
         protected boolean isValidQueensideCastle(Move.Builder partialMove, Move.History
                 moveHistory, Board board) {
-            Board.Coordinate kingStart = new Board.Coordinate(4, 0);
-            Board.Coordinate rookStart = new Board.Coordinate(0, 0);
-
-            // TODO check history
-            if (isClearPath(kingStart, rookStart, board) && !hasPieceMoved(kingStart,
-                    moveHistory) && !hasPieceMoved(rookStart, moveHistory)) {
-                return true;
-            }
-            else {
-                return false;
-            }
+            return super.isValidCastle(moveHistory, board, WhiteStandardLogic.kingStart,
+                    WhiteStandardLogic.queenRookStart);
         }
+
         @Override
         protected void executeKingsideCastle(Board board) {
-            Piece king = board.removePiece(new Board.Coordinate(4, 0));
-            Piece rook = board.removePiece(new Board.Coordinate(7, 0));
+            Piece king = board.removePiece(WhiteStandardLogic.kingStart);
+            Piece rook = board.removePiece(WhiteStandardLogic.kingRookStart);
 
-            board.placePiece(king, new Board.Coordinate(6, 0));
-            board.placePiece(rook, new Board.Coordinate(5, 0));
+            board.placePiece(king, WhiteStandardLogic.kingsideCastledKingLocation);
+            board.placePiece(rook, WhiteStandardLogic.castledKingRookLocation);
+        }
+
+        @Override
+        protected void executeQueensideCastle(Board board) {
+            Piece king = board.removePiece(WhiteStandardLogic.kingStart);
+            Piece rook = board.removePiece(WhiteStandardLogic.kingRookStart);
+
+            board.placePiece(king, WhiteStandardLogic.queensideCastledKingLocation);
+            board.placePiece(rook, WhiteStandardLogic.castledQueenRookLocation);
         }
     }
 
     static class BlackStandardLogic extends StandardLogic {
+        private static Board.Coordinate kingStart = new Board.Coordinate(4, 7);
+        private static Board.Coordinate kingRookStart = new Board.Coordinate(7, 7);
+        private static Board.Coordinate queenRookStart = new Board.Coordinate(0, 7);
+
+        private static Board.Coordinate kingsideCastledKingLocation = new Board.Coordinate(6, 7);
+        private static Board.Coordinate queensideCastledKingLocation = new Board.Coordinate(2, 7);
+        private static Board.Coordinate castledKingRookLocation = new Board.Coordinate(5, 7);
+        private static Board.Coordinate castledQueenRookLocation = new Board.Coordinate(3, 7);
+
         BlackStandardLogic() {
+            super(Color.BLACK);
         }
 
         @Override
@@ -361,43 +436,33 @@ class Player {
         @Override
         protected boolean isValidKingsideCastle(Move.Builder partialMove, Move.History moveHistory,
                                                 Board board) {
-            Board.Coordinate kingStart = new Board.Coordinate(4, 7);
-            Board.Coordinate rookStart = new Board.Coordinate(7, 7);
-
-            // TODO check history
-            if (isClearPath(kingStart, rookStart, board) && !hasPieceMoved(kingStart,
-                    moveHistory) && !hasPieceMoved(rookStart, moveHistory)) {
-                return true;
-            }
-            else {
-                return false;
-            }
-
+            return super.isValidCastle(moveHistory, board, BlackStandardLogic.kingStart,
+                    BlackStandardLogic.kingRookStart);
         }
 
         @Override
         protected boolean isValidQueensideCastle(Move.Builder partialMove, Move.History
                 moveHistory, Board board) {
-            Board.Coordinate kingStart = new Board.Coordinate(4, 7);
-            Board.Coordinate rookStart = new Board.Coordinate(0, 7);
-
-            // TODO check history
-            if (isClearPath(kingStart, rookStart, board) && !hasPieceMoved(kingStart,
-                    moveHistory) && !hasPieceMoved(rookStart, moveHistory)) {
-                return true;
-            }
-            else {
-                return false;
-            }
+            return super.isValidCastle(moveHistory, board, BlackStandardLogic.kingStart,
+                    BlackStandardLogic.queenRookStart);
         }
 
-                @Override
+        @Override
         protected void executeKingsideCastle(Board board) {
-            Piece king = board.removePiece(new Board.Coordinate(4, 7));
-            Piece rook = board.removePiece(new Board.Coordinate(7, 7));
+            Piece king = board.removePiece(BlackStandardLogic.kingStart);
+            Piece rook = board.removePiece(BlackStandardLogic.kingRookStart);
 
-            board.placePiece(king, new Board.Coordinate(6, 7));
-            board.placePiece(rook, new Board.Coordinate(5, 7));
+            board.placePiece(king, BlackStandardLogic.kingsideCastledKingLocation);
+            board.placePiece(rook, BlackStandardLogic.castledKingRookLocation);
+        }
+
+        @Override
+        protected void executeQueensideCastle(Board board) {
+            Piece king = board.removePiece(BlackStandardLogic.kingStart);
+            Piece rook = board.removePiece(BlackStandardLogic.queenRookStart);
+
+            board.placePiece(king, BlackStandardLogic.queensideCastledKingLocation);
+            board.placePiece(rook, BlackStandardLogic.castledQueenRookLocation);
         }
     }
 }

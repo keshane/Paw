@@ -210,18 +210,20 @@ final class Move {
             return new Move(this);
         }
 
-        void setDestination(Board.Coordinate destination) {
+        Builder setDestination(Board.Coordinate destination) {
             destinationFile = destination.file();
             destinationRank = destination.rank();
+            return this;
         }
 
         Board.Coordinate getDestination() {
             return new Board.Coordinate(destinationFile, destinationRank);
         }
 
-        void setSource(Board.Coordinate source) {
+        Builder setSource(Board.Coordinate source) {
             sourceFile = source.file();
             sourceRank = source.rank();
+            return this;
         }
 
         Board.Coordinate getSource() {

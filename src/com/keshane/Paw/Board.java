@@ -41,6 +41,21 @@ public class Board {
         }
     }
 
+    Board(Board oldBoard) {
+        board = new Piece[8][8];
+        for (int file = 0; file < 8; file++) {
+            for (int rank = 0; rank < 8; rank++) {
+                Piece piece = oldBoard.getPiece(file, rank);
+                if (null != piece) {
+                    board[file][rank] = new Piece(piece);
+                }
+                else {
+                    board[file][rank] = null;
+                }
+            }
+        }
+
+    }
     Piece removePiece(Board.Coordinate location) {
         if (!isLocationInRange(location)) {
             throw new IllegalArgumentException("Location " + location.toString() + " is out of " +
@@ -58,8 +73,9 @@ public class Board {
 
         return piece;
     }
+
     void placePiece(Piece piece, Board.Coordinate destination) {
-                if (!isLocationInRange(destination)) {
+        if (!isLocationInRange(destination)) {
             throw new IllegalArgumentException("Destination " + destination.toString() + " is not" +
                     " in the range of the board");
         }
@@ -112,6 +128,7 @@ public class Board {
         return locations;
     }
 
+
     @Override
     public String toString() {
         StringBuilder boardVisual = new StringBuilder();
@@ -123,7 +140,7 @@ public class Board {
         }
         boardVisual.append("\u2500\u2500\u2500\u2510\n");
 
-        for (int rank = 7; rank >= 0; rank --) {
+        for (int rank = 7; rank >= 0; rank--) {
             for (int file = 0; file <= 7; file++) {
                 boardVisual.append("\u2502");
                 Piece piece = getPiece(file, rank);
@@ -162,8 +179,8 @@ public class Board {
     static class Coordinate {
         private final int file;
         private final int rank;
-        Coordinate(int file, int rank)
-        {
+
+        Coordinate(int file, int rank) {
             this.file = file;
             this.rank = rank;
         }

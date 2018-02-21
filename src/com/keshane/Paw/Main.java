@@ -16,9 +16,9 @@ public class Main {
 
         Game game = new Game(whitePlayer, blackPlayer);
 
+        game.printBoard();
         while(true) {
             try {
-                game.printBoard();
                 System.out.println("Enter move ('q' or 'quit' to exit):");
                 String move = in.nextLine();
                 if (move.equalsIgnoreCase("q") || move.equalsIgnoreCase("quit")) {
@@ -30,13 +30,14 @@ public class Main {
                     continue;
                 }
                 game.makeMove(move);
+                game.printBoard();
             }
             catch (ParseException exception) {
                 System.out.println("Invalid move: " + exception.getMessage());
                 System.out.println("\t at position " + exception.getErrorOffset());
                 System.out.println("Please try again.");
             }
-            catch (NoSuchMoveException | AmbiguousNotationException exception) {
+            catch (NoSuchMoveException | AmbiguousNotationException |KingInCheckException exception) {
                 System.out.println(exception.getMessage());
             }
 

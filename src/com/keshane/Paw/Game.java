@@ -22,7 +22,8 @@ public class Game {
         history = new Move.History();
     }
 
-    void makeMove(String notation) throws ParseException, NoSuchMoveException, AmbiguousNotationException {
+    void makeMove(String notation) throws ParseException, NoSuchMoveException,
+            AmbiguousNotationException, KingInCheckException {
         Move move;
         if (currentTurn == Color.WHITE) {
             move = whitePlayer.makeMove(notation, history, board);
