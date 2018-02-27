@@ -5,6 +5,10 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * A Move object contains all the information necessary to define a chess move.
+ * A Move is immutable, so it should be created using the {@link Move.Builder}.
+ */
 final class Move {
     private final int destinationFile;
     private final int destinationRank;
@@ -18,6 +22,10 @@ final class Move {
 
     private final Piece.Type pieceType;
 
+    /**
+     * Create an immutable Move object from the Builder.
+     * @param builder
+     */
     private Move(Builder builder) {
         this.destinationRank = builder.getDestinationRank();
         this.destinationFile = builder.getDestinationFile();
@@ -26,24 +34,6 @@ final class Move {
         this.player = builder.player;
         this.types = builder.getTypes();
         this.pieceType = builder.getPieceType();
-    }
-
-    int getSourceFile() {
-        return sourceFile;
-    }
-
-
-    int getSourceRank() {
-        return sourceRank;
-    }
-
-
-    int getDestinationFile() {
-        return destinationFile;
-    }
-
-    int getDestinationRank() {
-        return destinationRank;
     }
 
     Board.Coordinate getDestination() {
@@ -92,7 +82,7 @@ final class Move {
     }
 
     /**
-     * {@code Move} builder static inner class.
+     * The setter methods of this class should be used to build a {@link Move} object.
      */
     static final class Builder {
         private int destinationFile = -1;
@@ -104,8 +94,22 @@ final class Move {
         private Piece.Type pieceType;
 
         // TODO validate setters
+
+        /**
+         * Initiate the builder
+         */
         Builder() {
             this.types = EnumSet.noneOf(Type.class);
+        }
+
+        Builder(Builder oldbuiler) {
+            this.destinationFile = oldbuiler.destinationFile;
+            this.destinationRank = oldbuiler.destinationRank;
+            this.sourceFile = oldbuiler.sourceFile;
+            this.sourceRank = oldbuiler.sourceRank;
+            this.player = oldbuiler.player;
+            this.types = oldbuiler.types.clone();
+            this.pieceType = oldbuiler.pieceType;
         }
 
         /**
@@ -211,8 +215,8 @@ final class Move {
         }
 
         Builder setDestination(Board.Coordinate destination) {
-            destinationFile = destination.file();
-            destinationRank = destination.rank();
+            destinationFile = destination.file;
+            destinationRank = destination.rank;
             return this;
         }
 
@@ -221,8 +225,8 @@ final class Move {
         }
 
         Builder setSource(Board.Coordinate source) {
-            sourceFile = source.file();
-            sourceRank = source.rank();
+            sourceFile = source.file;
+            sourceRank = source.rank;
             return this;
         }
 

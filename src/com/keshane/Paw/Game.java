@@ -38,9 +38,9 @@ public class Game {
     }
 
     void printBoard() {
-        System.out.println("BLACK: " + blackPlayer.getName());
+        System.out.println("BLACK: " + blackPlayer.name);
         System.out.println(board.toString());
-        System.out.println("WHITE: " + whitePlayer.getName());
+        System.out.println("WHITE: " + whitePlayer.name);
     }
 
     void printHistory() {

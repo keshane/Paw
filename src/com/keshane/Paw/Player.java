@@ -7,24 +7,26 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * The Player controls the pieces of the board and contains the logic to move those pieces.
+ */
 class Player {
-    private final String name;
-    private final Color color;
+    final String name;
+    final Color color;
     private final Logic variantLogic;
 
+    /**
+     * Construct a Player
+     *
+     * @param name         the name of the player
+     * @param color        the color of the pieces that the Player controls
+     * @param variantLogic the logic used to control the pieces
+     */
     Player(String name, Color color, Logic variantLogic) {
         this.name = name;
         this.color = color;
         this.variantLogic = variantLogic; // TODO
 
-    }
-
-    String getName() {
-        return this.name;
-    }
-
-    Logic getVariantLogic() {
-        return variantLogic;
     }
 
     Move makeMove(String notation, Move.History moveHistory, Board board) throws ParseException,
@@ -52,7 +54,7 @@ class Player {
             // check for checks
             Board verificationBoard = new Board(board);
             executeMove(fullMove, verificationBoard);
-            if (isKingInCheck(verificationBoard)) {
+            if (isKingInCheck(moveHistory, verificationBoard)) {
                 throw new KingInCheckException("Cannot make this move because the king is in " +
                         "check");
             }
@@ -79,17 +81,24 @@ class Player {
             else if (moveTypes.contains(Move.Type.QUEENSIDE_CASTLE)) {
                 executeQueensideCastle(board);
             }
+            else if (moveTypes.contains(Move.Type.EN_PASSANT)) {
+                executeEnPassant(move, board);
+            }
         }
+
+
+        protected abstract void executeEnPassant(Move move, Board board);
+
 
         private Move buildMove(Move.Builder partialMove, Move.History moveHistory, Board board)
                 throws NoSuchMoveException,
                 AmbiguousNotationException {
             EnumSet<Move.Type> moveTypes = partialMove.getTypes();
 
-            if (moveTypes.contains(Move.Type.NORMAL)) {
-                Board.Coordinate source = findSourceSquare(partialMove, board);
-                partialMove.setSourceFile(source.file());
-                partialMove.setSourceRank(source.rank());
+            if (moveTypes.contains(Move.Type.NORMAL) || moveTypes.contains(Move.Type.EN_PASSANT)) {
+                Board.Coordinate source = findSourceSquare(partialMove, moveHistory, board);
+                partialMove.setSourceFile(source.file);
+                partialMove.setSourceRank(source.rank);
             }
             else if (moveTypes.contains(Move.Type.KINGSIDE_CASTLE)) {
                 boolean isValid = isValidKingsideCastle(partialMove, moveHistory, board);
@@ -119,14 +128,18 @@ class Player {
         protected abstract boolean isValidQueensideCastle(Move.Builder partialMove, Move
                 .History moveHistory, Board board);
 
-        private Board.Coordinate findSourceSquare(Move.Builder partialMove, Board board) throws
+        private Board.Coordinate findSourceSquare(Move.Builder partialMove, Move.History
+                moveHistory, Board board)
+                throws
                 NoSuchMoveException, AmbiguousNotationException {
             Set<Board.Coordinate> locationsOfPieceType = board.getLocationsOfPiece(partialMove
                     .getPieceType(), partialMove.getPlayer());
 
             Set<Board.Coordinate> possibleSourceSquares = new HashSet<>();
             for (Board.Coordinate source : locationsOfPieceType) {
-                if (isValidMove(partialMove, source, board)) {
+                Move.Builder possiblePartialMove = new Move.Builder(partialMove);
+                possiblePartialMove.setSource(source);
+                if (isValidMove(possiblePartialMove, moveHistory, board)) {
                     possibleSourceSquares.add(source);
                 }
             }
@@ -144,13 +157,13 @@ class Player {
             int expectedSourceFile = partialMove.getSourceFile();
             if (expectedSourceFile > 0) {
                 filteredSourceSquares = filteredSourceSquares.stream().filter(coordinate -> coordinate
-                        .file() == expectedSourceFile).collect(Collectors.toSet());
+                        .file == expectedSourceFile).collect(Collectors.toSet());
             }
 
             int expectedSourceRank = partialMove.getSourceRank();
             if (expectedSourceRank > 0) {
                 filteredSourceSquares = filteredSourceSquares.stream().filter(coordinate ->
-                        coordinate.rank() == expectedSourceRank).collect(Collectors.toSet());
+                        coordinate.rank == expectedSourceRank).collect(Collectors.toSet());
             }
 
             if (filteredSourceSquares.size() > 1) {
@@ -169,107 +182,120 @@ class Player {
             return filteredSourceSquares.iterator().next();
         }
 
-        private boolean isValidKingMove(Board.Coordinate source, Board.Coordinate
-                destination) {
-            int fileDistance = Math.abs(destination.file() - source.file());
-            int rankDistance = Math.abs(destination.rank() - source.rank());
-
-            return (fileDistance | rankDistance) == 1;
+        protected boolean isValidCaptureOrNonCapture(Move.Builder move, Board board) {
+            Board.Coordinate destination = move.getDestination();
+            boolean validity = true;
+            if (move.getTypes().contains(Move.Type.CAPTURE) && board.getPiece(destination) ==
+                    null) {
+                validity = false;
+            }
+            if (!move.getTypes().contains(Move.Type.CAPTURE) && board.getPiece(destination) !=
+                    null) {
+                validity = false;
+            }
+            return validity;
         }
 
-        private boolean isValidQueenMove(Board.Coordinate source, Board.Coordinate destination, Board
-                board) {
-            return isValidBishopMove(source, destination, board) || isValidRookMove(source,
-                    destination, board);
+        private boolean isValidKingMove(Move.Builder move, Board board) {
+            Board.Coordinate destination = move.getDestination();
+            Board.Coordinate source = move.getSource();
+
+            int fileDistance = Math.abs(destination.file - source.file);
+            int rankDistance = Math.abs(destination.rank - source.rank);
+
+            return ((fileDistance | rankDistance) == 1) && isValidCaptureOrNonCapture(move, board);
         }
 
-        private boolean isValidRookMove(Board.Coordinate source, Board.Coordinate destination, Board
-                board) {
-            boolean isSameFile = (source.file() == destination.file());
-            boolean isSameRank = (source.rank() == destination.rank());
+        private boolean isValidQueenMove(Move.Builder move, Board board) {
+            return isValidBishopMove(move, board) || isValidRookMove(move, board) &&
+                    isValidCaptureOrNonCapture(move, board);
+        }
 
-            return (isSameFile || isSameRank) && isClearPath(source, destination, board);
+        private boolean isValidRookMove(Move.Builder move, Board board) {
+            Board.Coordinate destination = move.getDestination();
+            Board.Coordinate source = move.getSource();
+            boolean isSameFile = (source.file == destination.file);
+            boolean isSameRank = (source.rank == destination.rank);
+
+            return (isSameFile || isSameRank) && isClearPath(source, destination, board) &&
+                    isValidCaptureOrNonCapture(move, board);
         }
 
 
-        private boolean isValidBishopMove(Board.Coordinate source, Board.Coordinate destination,
-                                          Board board) {
-            int fileDistance = Math.abs(destination.file() - source.file());
-            int rankDistance = Math.abs(destination.rank() - source.rank());
+        private boolean isValidBishopMove(Move.Builder move, Board board) {
+            Board.Coordinate destination = move.getDestination();
+            Board.Coordinate source = move.getSource();
+            int fileDistance = Math.abs(destination.file - source.file);
+            int rankDistance = Math.abs(destination.rank - source.rank);
             boolean isDiagonal = (fileDistance == rankDistance);
 
-            return isDiagonal && isClearPath(source, destination, board);
+            return isDiagonal && isClearPath(source, destination, board) &&
+                    isValidCaptureOrNonCapture(move, board);
 
         }
 
-        private boolean isValidKnightMove(Board.Coordinate source, Board.Coordinate destination,
-                                          Board board) {
-            int fileDistance = Math.abs(destination.file() - source.file());
-            int rankDistance = Math.abs(destination.rank() - source.rank());
+        private boolean isValidKnightMove(Move.Builder move, Board board) {
+            Board.Coordinate destination = move.getDestination();
+            Board.Coordinate source = move.getSource();
+            int fileDistance = Math.abs(destination.file - source.file);
+            int rankDistance = Math.abs(destination.rank - source.rank);
 
-            return (fileDistance != 0 && rankDistance != 0) && (fileDistance + rankDistance == 3);
+            return (fileDistance != 0 && rankDistance != 0) && (fileDistance + rankDistance == 3) &&
+                    isValidCaptureOrNonCapture(move, board);
         }
 
 
-        protected abstract boolean isValidPawnMove(Board.Coordinate source, Board.Coordinate
-                destination, Board board);
+        protected abstract boolean isValidPawnMove(Move.Builder move, Move.History moveHistory,
+                                                   Board board);
 
-        private boolean isValidMove(Move.Builder partialMove, Board.Coordinate source, Board
+        private boolean isValidMove(Move.Builder partialMove, Move.History moveHistory, Board
                 board) {
             Board.Coordinate destination = new Board.Coordinate(partialMove.getDestinationFile(),
                     partialMove.getDestinationRank());
 
-            if (partialMove.getTypes().contains(Move.Type.CAPTURE)) {
-                if (board.getPiece(destination) == null || board.getPiece(destination).getColor().opposite()
-                        != partialMove.getPlayer()) {
-                    return false;
-                }
+            if (destination.equals(partialMove.getSource())) {
+                return false;
             }
-            else if (partialMove.getTypes().contains(Move.Type.NORMAL)) {
-                if (board.getPiece(destination) != null) {
-                    return false;
-                }
-            }
+
             boolean isValid = false;
             switch (partialMove.getPieceType()) {
                 case KING:
-                    isValid = isValidKingMove(source, destination);
+                    isValid = isValidKingMove(partialMove, board);
                     break;
                 case QUEEN:
-                    isValid = isValidQueenMove(source, destination, board);
+                    isValid = isValidQueenMove(partialMove, board);
                     break;
                 case ROOK:
-                    isValid = isValidRookMove(source, destination, board);
+                    isValid = isValidRookMove(partialMove, board);
                     break;
                 case KNIGHT:
-                    isValid = isValidKnightMove(source, destination, board);
+                    isValid = isValidKnightMove(partialMove, board);
                     break;
                 case BISHOP:
-                    isValid = isValidBishopMove(source, destination, board);
+                    isValid = isValidBishopMove(partialMove, board);
                     break;
                 case PAWN:
-                    isValid = isValidPawnMove(source, destination, board);
+                    isValid = isValidPawnMove(partialMove, moveHistory, board);
                     break;
                 default:
                     break;
             }
-
 
             return isValid;
         }
 
         protected boolean isClearPath(Board.Coordinate source, Board.Coordinate destination, Board
                 board) {
-            int fileDifference = destination.file() - source.file();
-            int rankDifference = destination.rank() - source.rank();
+            int fileDifference = destination.file - source.file;
+            int rankDifference = destination.rank - source.rank;
 
             int fileDirection = fileDifference == 0 ? 0 : fileDifference / Math.abs(fileDifference);
             int rankDirection = rankDifference == 0 ? 0 : rankDifference / Math.abs(rankDifference);
 
-            int filePath = source.file() + fileDirection;
-            int rankPath = source.rank() + rankDirection;
+            int filePath = source.file + fileDirection;
+            int rankPath = source.rank + rankDirection;
 
-            while (!(filePath == destination.file() && rankPath == destination.rank())) {
+            while (!(filePath == destination.file && rankPath == destination.rank)) {
                 if (board.getPiece(filePath, rankPath) == null) {
                     filePath += fileDirection;
                     rankPath += rankDirection;
@@ -299,7 +325,7 @@ class Player {
                     moveHistory) && !hasPieceMoved(rookStart, moveHistory);
         }
 
-        private boolean isKingInCheck(Board board) {
+        private boolean isKingInCheck(Move.History moveHistory, Board board) {
             Set<Board.Coordinate> kingLocations = board.getLocationsOfPiece(Piece.Type.KING, color);
             Board.Coordinate kingLocation = kingLocations.iterator().next();
 
@@ -318,8 +344,12 @@ class Player {
                     .addType(Move.Type.CAPTURE).addType(Move.Type.NORMAL).setPlayer(color.opposite());
 
             for (Board.Coordinate attackingPieceLocation : attackingPieceLocations) {
-                captureKingMove.setPieceType(board.getPiece(attackingPieceLocation).getPieceType());
-                if (isValidMove(captureKingMove, attackingPieceLocation, board)) {
+                Move.Builder possibleCaptureKingMove = new Move.Builder(captureKingMove);
+                possibleCaptureKingMove.setPieceType(board.getPiece(attackingPieceLocation)
+                        .getPieceType());
+                possibleCaptureKingMove.setSource(attackingPieceLocation);
+                // TODO update moveHistory for en passant
+                if (isValidMove(possibleCaptureKingMove, moveHistory, board)) {
                     return true;
                 }
             }
@@ -345,21 +375,48 @@ class Player {
         }
 
         @Override
-        protected boolean isValidPawnMove(Board.Coordinate source, Board.Coordinate destination,
-                                          Board board) {
+        protected void executeEnPassant(Move move, Board board) {
+            Board.Coordinate destination = move.getDestination();
+            Board.Coordinate capturedPawnLocation = new Board.Coordinate(destination.file,
+                    destination.rank - 1);
+            board.removePiece(capturedPawnLocation);
+            Piece capturingPawn = board.removePiece(move.getSource());
+            board.placePiece(capturingPawn, destination);
+        }
+
+        @Override
+        protected boolean isValidPawnMove(Move.Builder move, Move.History moveHistory, Board
+                board) {
+            Board.Coordinate destination = move.getDestination();
+            Board.Coordinate source = move.getSource();
             boolean isValid = false;
-            if (destination.file() == source.file()) {
-                if (destination.rank() - source.rank() == 1) {
+            // normal move
+            if (destination.file == source.file) {
+                if ((destination.rank - source.rank == 1) && (board.getPiece(destination) ==
+                        null)) {
                     isValid = true;
                 }
 
-                if (source.rank() == 1 && destination.rank() - source.rank() == 2 && isClearPath
-                        (source, destination,
-                                board)) {
+                if (source.rank == 1 && destination.rank - source.rank == 2 && isClearPath
+                        (source, destination, board) && board.getPiece(destination) == null) {
                     isValid = true;
 
                 }
 
+            }
+            else if (move.getTypes().contains(Move.Type.CAPTURE) && Math.abs(destination.file -
+                    source.file) == 1 && destination.rank - source.rank == 1) {
+                isValid = true;
+
+            }
+            else if (move.getTypes().contains(Move.Type.EN_PASSANT) && Math.abs(destination.file
+                    - source.file) == 1 && source.rank == 4 && destination.rank == 5) {
+                Move lastMove = moveHistory.peekLast();
+                // check the requirements for an en passant
+                if (lastMove.getPieceType().equals(Piece.Type.PAWN) && lastMove.getDestination()
+                        .rank - lastMove.getSource().rank == -2) {
+                    isValid = true;
+                }
             }
 
             return isValid;
@@ -411,25 +468,46 @@ class Player {
         BlackStandardLogic() {
             super(Color.BLACK);
         }
-
         @Override
-        protected boolean isValidPawnMove(Board.Coordinate source, Board.Coordinate destination,
-                                          Board board) {
+        protected void executeEnPassant(Move move, Board board) {
+            Board.Coordinate destination = move.getDestination();
+            Board.Coordinate capturedPawnLocation = new Board.Coordinate(destination.file,
+                    destination.rank + 1);
+            board.removePiece(capturedPawnLocation);
+            Piece capturingPawn = board.removePiece(move.getSource());
+            board.placePiece(capturingPawn, destination);
+        }
+        @Override
+        protected boolean isValidPawnMove(Move.Builder move, Move.History moveHistory, Board board) {
+            Board.Coordinate destination = move.getDestination();
+            Board.Coordinate source = move.getSource();
             boolean isValid = false;
-            if (destination.file() == source.file()) {
-                if (destination.rank() - source.rank() == -1) {
+            if (destination.file == source.file) {
+                if ((destination.rank - source.rank == -1) && (board.getPiece(destination) ==
+                        null)) {
                     isValid = true;
                 }
 
-                if (source.rank() == 6 && destination.rank() - source.rank() == -2 && isClearPath
-                        (source, destination,
-                                board)) {
+                if (source.rank == 6 && destination.rank - source.rank == -2 && isClearPath
+                        (source, destination, board) && (board.getPiece(destination) == null)) {
                     isValid = true;
 
                 }
 
             }
-
+            else if (move.getTypes().contains(Move.Type.CAPTURE) && Math.abs(destination.file - source.file) == 1 && destination.rank - source
+                    .rank == -1) {
+                isValid = true;
+            }
+            else if (move.getTypes().contains(Move.Type.EN_PASSANT) && Math.abs(destination.file
+                    - source.file) == 1 && source.rank == 3 && destination.rank == 2) {
+                Move lastMove = moveHistory.peekLast();
+                // check the requirements for an en passant
+                if (lastMove.getPieceType().equals(Piece.Type.PAWN) && lastMove.getDestination()
+                        .rank - lastMove.getSource().rank == 2) {
+                    isValid = true;
+                }
+            }
             return isValid;
         }
 

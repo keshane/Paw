@@ -3,10 +3,17 @@ package com.keshane.Paw;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * This class represents a chessboard and the pieces on that chessboard.
+ */
 public class Board {
     private Piece[][] board;
 
 
+    /**
+     * Construct the board based on the configuration.
+     * @param configuration indicates the initial arrangement of the pieces
+     */
     Board(Configuration configuration) {
         board = new Piece[8][8];
         // set up the normal initial chessboard configuration
@@ -41,6 +48,12 @@ public class Board {
         }
     }
 
+    /**
+     * A copy constructor.
+     *
+     * Use this to create a copy of another board.
+     * @param oldBoard the Board to create a copy of.
+     */
     Board(Board oldBoard) {
         board = new Piece[8][8];
         for (int file = 0; file < 8; file++) {
@@ -56,6 +69,7 @@ public class Board {
         }
 
     }
+
     Piece removePiece(Board.Coordinate location) {
         if (!isLocationInRange(location)) {
             throw new IllegalArgumentException("Location " + location.toString() + " is out of " +
@@ -69,7 +83,7 @@ public class Board {
                     "contain a piece");
         }
 
-        board[location.file()][location.rank()] = null;
+        board[location.file][location.rank] = null;
 
         return piece;
     }
@@ -88,12 +102,11 @@ public class Board {
             throw new IllegalArgumentException("Cannot place a null piece");
         }
 
-        board[destination.file()][destination.rank()] = piece;
+        board[destination.file][destination.rank] = piece;
     }
 
     private boolean isLocationInRange(Board.Coordinate location) {
-        if (location.file() >= 0 && location.file() <= 7 && location.rank() >= 0 && location.file
-                () <= 7) {
+        if (location.file >= 0 && location.file <= 7) {
             return true;
         }
         else {
@@ -110,7 +123,7 @@ public class Board {
     }
 
     Piece getPiece(Board.Coordinate location) {
-        return getPiece(location.file(), location.rank());
+        return getPiece(location.file, location.rank);
     }
 
     Set<Coordinate> getLocationsOfPiece(Piece.Type pieceType, Color color) {
@@ -176,21 +189,22 @@ public class Board {
         return boardVisual.toString();
     }
 
+    /**
+     * An entity object used to represent a location on a {@link Board}.
+     */
     static class Coordinate {
-        private final int file;
-        private final int rank;
+        /**
+         * The file (0-based) of the location.
+         */
+        final int file;
+        /**
+         * The rank (0-based) of the location.
+         */
+        final int rank;
 
         Coordinate(int file, int rank) {
             this.file = file;
             this.rank = rank;
-        }
-
-        int file() {
-            return file;
-        }
-
-        int rank() {
-            return rank;
         }
 
         @Override
@@ -204,7 +218,7 @@ public class Board {
 
             Board.Coordinate secondCoordinate = (Board.Coordinate) second;
 
-            return this.file() == secondCoordinate.file() && this.rank() == secondCoordinate.rank();
+            return this.file == secondCoordinate.file && this.rank == secondCoordinate.rank;
         }
 
         @Override

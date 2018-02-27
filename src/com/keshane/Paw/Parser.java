@@ -57,7 +57,7 @@ class Parser {
         }
         else if (notation.endsWith(Parser.EN_PASSANT)) {
             move.addType(Move.Type.EN_PASSANT);
-            notation = notation.substring(0, notation.length() - 1);
+            notation = notation.substring(0, notation.length() - 2);
         }
         else if (notation.endsWith(Piece.Type.QUEEN.getNotation()) ||
                 notation.endsWith(Piece.Type.BISHOP.getNotation()) ||
