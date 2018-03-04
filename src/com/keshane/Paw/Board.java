@@ -7,15 +7,27 @@ import java.util.Set;
  * This class represents a chessboard and the pieces on that chessboard.
  */
 public class Board {
+    /**
+     * The data structure that represents the board and the pieces it may contain
+     */
     private Piece[][] board;
 
+    /**
+     * The number of files in the board
+     */
+    private final int FILES = 8;
+
+    /**
+     * The number of ranks in the board
+     */
+    private final int RANKS = 8;
 
     /**
      * Construct the board based on the configuration.
      * @param configuration indicates the initial arrangement of the pieces
      */
     Board(Configuration configuration) {
-        board = new Piece[8][8];
+        board = new Piece[FILES][RANKS];
         // set up the normal initial chessboard configuration
         if (configuration == Configuration.NORMAL) {
             // set up white pieces
@@ -62,9 +74,9 @@ public class Board {
      * @param oldBoard the Board to create a copy of.
      */
     Board(Board oldBoard) {
-        board = new Piece[8][8];
-        for (int file = 0; file < 8; file++) {
-            for (int rank = 0; rank < 8; rank++) {
+        board = new Piece[FILES][RANKS];
+        for (int file = 0; file < FILES; file++) {
+            for (int rank = 0; rank < RANKS; rank++) {
                 Piece piece = oldBoard.getPiece(file, rank);
                 if (null != piece) {
                     board[file][rank] = new Piece(piece);
@@ -77,6 +89,11 @@ public class Board {
 
     }
 
+    /**
+     * Removes the piece at the specified location
+     * @param location a location on the board that has a piece on it
+     * @return the piece that was removed
+     */
     Piece removePiece(Board.Coordinate location) {
         if (!isLocationInRange(location)) {
             throw new IllegalArgumentException("Location " + location.toString() + " is out of " +
@@ -95,6 +112,11 @@ public class Board {
         return piece;
     }
 
+    /**
+     * Places the piece at the specified location on the board
+     * @param piece the piece to be placed
+     * @param destination the location at which to put the piece
+     */
     void placePiece(Piece piece, Board.Coordinate destination) {
         if (!isLocationInRange(destination)) {
             throw new IllegalArgumentException("Destination " + destination.toString() + " is not" +
@@ -113,30 +135,44 @@ public class Board {
     }
 
     private boolean isLocationInRange(Board.Coordinate location) {
-        if (location.file >= 0 && location.file <= 7) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        return location.file >= 0 && location.file < FILES && location.rank >= 0 && location.rank
+                < RANKS;
     }
 
+    /**
+     * Gets the piece at the specified file and rank.
+     * @param file the column that the piece is in
+     * @param rank the row that the piece is in
+     * @return a Piece object or null if there is no piece at the location
+     */
     Piece getPiece(int file, int rank) {
-        if (file < 0 || file > 7 || rank < 0 || rank > 7) {
+        if (file < 0 || file >= FILES || rank < 0 || rank >= RANKS) {
             throw new IllegalArgumentException("Coordinate is not in range 0 to 7: (" + file + "," +
                     rank + ")");
         }
         return board[file][rank];
     }
 
+    /**
+     * Gets the piece at the specified location.
+     * @param location the position of the piece
+     * @return a Piece object or null if there is no piece at the location
+     */
     Piece getPiece(Board.Coordinate location) {
         return getPiece(location.file, location.rank);
     }
 
+    /**
+     * Finds all the pieces of the specified type and color
+     * @param pieceType the piece type of the piece to search for
+     * @param color the color of the piece to search for
+     * @return a Set containing the locations of all pieces that fulfill the piece type and color
+     * criteria
+     */
     Set<Coordinate> getLocationsOfPiece(Piece.Type pieceType, Color color) {
         Set<Coordinate> locations = new HashSet<>();
-        for (int file = 0; file < 8; file++) {
-            for (int rank = 0; rank < 8; rank++) {
+        for (int file = 0; file < FILES; file++) {
+            for (int rank = 0; rank < RANKS; rank++) {
                 Piece piece = getPiece(file, rank);
                 if (null != piece && piece.getPieceType() == pieceType && piece.getColor() ==
                         color) {
@@ -149,19 +185,23 @@ public class Board {
     }
 
 
+    /**
+     * Creates a human-readable representation of the board.
+     * @return a String formatted to look like a board
+     */
     @Override
     public String toString() {
         StringBuilder boardVisual = new StringBuilder();
 
         // top of board
         boardVisual.append("\u250C");
-        for (int file = 0; file < 7; file++) {
+        for (int file = 0; file < FILES - 1; file++) {
             boardVisual.append("\u2500\u2500\u2500\u252C");
         }
         boardVisual.append("\u2500\u2500\u2500\u2510\n");
 
-        for (int rank = 7; rank >= 0; rank--) {
-            for (int file = 0; file <= 7; file++) {
+        for (int rank = RANKS - 1; rank >= 0; rank--) {
+            for (int file = 0; file < FILES; file++) {
                 boardVisual.append("\u2502");
                 Piece piece = getPiece(file, rank);
                 boardVisual.append(" ");
@@ -179,7 +219,7 @@ public class Board {
 
             if (rank > 0) {
                 boardVisual.append("\u251C");
-                for (int file = 0; file < 7; file++) {
+                for (int file = 0; file < FILES - 1; file++) {
                     boardVisual.append("\u2500\u2500\u2500\u253C");
                 }
                 boardVisual.append("\u2500\u2500\u2500\u2524\n");
@@ -188,7 +228,7 @@ public class Board {
 
         // bottom of board
         boardVisual.append("\u2514");
-        for (int file = 0; file < 7; file++) {
+        for (int file = 0; file < FILES - 1; file++) {
             boardVisual.append("\u2500\u2500\u2500\u2534");
         }
         boardVisual.append("\u2500\u2500\u2500\u2518\n");
@@ -209,11 +249,22 @@ public class Board {
          */
         final int rank;
 
+        /**
+         * Construct a Coordinate object
+         * @param file the column of the location to represent
+         * @param rank the row of the location to represent
+         */
         Coordinate(int file, int rank) {
             this.file = file;
             this.rank = rank;
         }
 
+        /**
+         * Determines whether the location represented by this Coordinate is the same location
+         * represented by another Coordinate.
+         * @param second the other Coordinate to compare to
+         * @return true if the other Coordinate is equal to this Coordinate, else false
+         */
         @Override
         public boolean equals(Object second) {
             if (second == null) {
@@ -228,15 +279,22 @@ public class Board {
             return this.file == secondCoordinate.file && this.rank == secondCoordinate.rank;
         }
 
+        /**
+         * Creates a human-readable representation of this Coordinate
+         * @return a String describing this location
+         */
         @Override
         public String toString() {
             return "(" + file + ", " + rank + ")";
         }
     }
 
+    /**
+     * Represents possible initial placement of pieces on a board.
+     */
     enum Configuration {
-        EMPTY,
-        NORMAL,
-        TEST,
+        EMPTY, // no pieces
+        NORMAL, // standard chess setup
+        TEST, // used for setting up pieces to quickly test this code
     }
 }

@@ -29,6 +29,18 @@ class Player {
 
     }
 
+    /**
+     * Interprets the notation for a move and makes the move on the specified board, using the
+     * context of the move history if needed.
+     * @param notation the algebraic notation describing the move
+     * @param moveHistory the history of the game
+     * @param board the board on which to make the move
+     * @return a Move object representing the move that was made
+     * @throws ParseException if there is an error interpreting the notation
+     * @throws NoSuchMoveException if the given move represented by the notation is not possible
+     * @throws AmbiguousNotationException if the notation describes more than one possible move
+     * @throws KingInCheckException if the given move would put this player's king in check
+     */
     Move makeMove(String notation, Move.History moveHistory, Board board) throws ParseException,
             NoSuchMoveException, AmbiguousNotationException, KingInCheckException {
         Parser notationParser = new Parser(notation);
@@ -36,7 +48,6 @@ class Player {
         move.setPlayer(color);
         Move executedMove = variantLogic.makeMove(move, moveHistory, board);
         return executedMove;
-        // TODO
     }
 
     static abstract class StandardLogic implements Logic {
@@ -336,6 +347,7 @@ class Player {
         }
 
         private boolean isKingInCheck(Move.History moveHistory, Board board) {
+            // TODO check pawn attack
             Set<Board.Coordinate> kingLocations = board.getLocationsOfPiece(Piece.Type.KING, color);
             Board.Coordinate kingLocation = kingLocations.iterator().next();
 
