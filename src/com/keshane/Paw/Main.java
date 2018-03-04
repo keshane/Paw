@@ -1,21 +1,31 @@
 package com.keshane.Paw;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        if (args.length == 3 && args[0].equalsIgnoreCase("-c")) {
+            new RemoteSession(args[1], args[2]);
+            return;
+        }
+        else if (args.length == 1 && args[0].equalsIgnoreCase("-s")) {
+            new RemoteSession();
+            return;
+        }
+
         Board.Configuration configuration = Board.Configuration.NORMAL;
         if (args.length == 1 && args[0].equalsIgnoreCase("test")) {
             configuration = Board.Configuration.TEST;
         }
-        Scanner in = new Scanner(System.in);
+        Scanner localIn = new Scanner(System.in);
         System.out.println("Enter name of player for white:");
-        String whitePlayer = in.nextLine();
+        String whitePlayer = localIn.nextLine();
 
         System.out.println("Enter name of player for black:");
-        String blackPlayer = in.nextLine();
+        String blackPlayer = localIn.nextLine();
 
         Game game = new Game(whitePlayer, blackPlayer, configuration);
 
@@ -23,7 +33,7 @@ public class Main {
         while(true) {
             try {
                 System.out.println("Enter move ('q' or 'quit' to exit):");
-                String move = in.nextLine();
+                String move = localIn.nextLine();
                 if (move.equalsIgnoreCase("q") || move.equalsIgnoreCase("quit")) {
                     System.out.println("Quitting...");
                     break;
@@ -45,5 +55,7 @@ public class Main {
             }
 
         }
+
+        localIn.close();
     }
 }
