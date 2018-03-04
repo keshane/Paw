@@ -59,6 +59,7 @@ class Player {
                         "check");
             }
 
+            // actually execute the move here.
             executeMove(fullMove, board);
 
             return fullMove;
@@ -84,18 +85,27 @@ class Player {
             else if (moveTypes.contains(Move.Type.EN_PASSANT)) {
                 executeEnPassant(move, board);
             }
+            else if (moveTypes.contains(Move.Type.PROMOTION)) {
+                board.removePiece(move.getSource());
+                if (moveTypes.contains(Move.Type.CAPTURE)) {
+                    board.removePiece(move.getDestination());
+                }
+
+                Piece promotedPiece = new Piece(move.promotionPieceType, move.player);
+                board.placePiece(promotedPiece, move.getDestination());
+            }
         }
 
 
         protected abstract void executeEnPassant(Move move, Board board);
-
 
         private Move buildMove(Move.Builder partialMove, Move.History moveHistory, Board board)
                 throws NoSuchMoveException,
                 AmbiguousNotationException {
             EnumSet<Move.Type> moveTypes = partialMove.getTypes();
 
-            if (moveTypes.contains(Move.Type.NORMAL) || moveTypes.contains(Move.Type.EN_PASSANT)) {
+            if (moveTypes.contains(Move.Type.NORMAL) || moveTypes.contains(Move.Type.EN_PASSANT)
+                    || moveTypes.contains(Move.Type.PROMOTION)) {
                 Board.Coordinate source = findSourceSquare(partialMove, moveHistory, board);
                 partialMove.setSourceFile(source.file);
                 partialMove.setSourceRank(source.rank);

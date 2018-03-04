@@ -64,6 +64,8 @@ class Parser {
                 notation.endsWith(Piece.Type.KNIGHT.getNotation()) ||
                 notation.endsWith(Piece.Type.ROOK.getNotation())) {
             move.addType(Move.Type.PROMOTION);
+            move.promotionPieceType = Piece.Type.parse(notation.substring(notation.length() - 1,
+                    notation.length()));
             notation = notation.substring(0, notation.length() - 1);
         }
         else {
@@ -161,6 +163,10 @@ class Parser {
         char pieceNotation = notation.charAt(notation.length() - 1);
 
         move.setPieceType(Piece.Type.parse(String.valueOf(pieceNotation)));
+
+        if (move.getTypes().contains(Move.Type.PROMOTION)) {
+            throw new ParseException("A non-pawn piece cannot be promoted", notation.length());
+        }
 
         if (notation.length() != 1) {
             throw new ParseException("Unexpected additional symbols before piece notation.",

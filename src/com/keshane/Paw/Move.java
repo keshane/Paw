@@ -10,17 +10,19 @@ import java.util.List;
  * A Move is immutable, so it should be created using the {@link Move.Builder}.
  */
 final class Move {
-    private final int destinationFile;
-    private final int destinationRank;
+    final int destinationFile;
+    final int destinationRank;
 
-    private final int sourceFile;
-    private final int sourceRank;
+    final int sourceFile;
+    final int sourceRank;
 
-    private final Color player;
+    final Color player;
 
-    private final EnumSet<Type> types;
+    final EnumSet<Type> types;
 
-    private final Piece.Type pieceType;
+    final Piece.Type pieceType;
+
+    final Piece.Type promotionPieceType;
 
     /**
      * Create an immutable Move object from the Builder.
@@ -34,6 +36,7 @@ final class Move {
         this.player = builder.player;
         this.types = builder.getTypes();
         this.pieceType = builder.getPieceType();
+        this.promotionPieceType = builder.promotionPieceType;
     }
 
     Board.Coordinate getDestination() {
@@ -69,7 +72,6 @@ final class Move {
         return pieceType;
     }
 
-
     enum Type {
         NORMAL,
         KINGSIDE_CASTLE,
@@ -92,6 +94,7 @@ final class Move {
         private Color player;
         private EnumSet<Type> types;
         private Piece.Type pieceType;
+        Piece.Type promotionPieceType;
 
         // TODO validate setters
 
@@ -110,6 +113,7 @@ final class Move {
             this.player = oldbuiler.player;
             this.types = oldbuiler.types.clone();
             this.pieceType = oldbuiler.pieceType;
+            this.promotionPieceType = oldbuiler.promotionPieceType;
         }
 
         /**
@@ -217,6 +221,11 @@ final class Move {
         Builder setDestination(Board.Coordinate destination) {
             destinationFile = destination.file;
             destinationRank = destination.rank;
+            return this;
+        }
+
+        Builder setPromotionPieceType(Piece.Type pieceType) {
+            this.promotionPieceType = pieceType;
             return this;
         }
 

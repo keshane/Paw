@@ -14,8 +14,8 @@ public class Game {
 
     private Move.History history;
 
-    Game(String whiteName, String blackName) {
-        board = new Board(Board.Configuration.NORMAL);
+    Game(String whiteName, String blackName, Board.Configuration configuration) {
+        board = new Board(configuration);
         whitePlayer = new Player(whiteName, Color.WHITE, new Player.WhiteStandardLogic());
         blackPlayer = new Player(blackName, Color.BLACK, new Player.BlackStandardLogic());
         currentTurn = Color.WHITE;

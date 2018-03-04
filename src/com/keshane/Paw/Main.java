@@ -7,6 +7,10 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) {
+        Board.Configuration configuration = Board.Configuration.NORMAL;
+        if (args.length == 1 && args[0].equalsIgnoreCase("test")) {
+            configuration = Board.Configuration.TEST;
+        }
         Scanner in = new Scanner(System.in);
         System.out.println("Enter name of player for white:");
         String whitePlayer = in.nextLine();
@@ -14,7 +18,7 @@ public class Main {
         System.out.println("Enter name of player for black:");
         String blackPlayer = in.nextLine();
 
-        Game game = new Game(whitePlayer, blackPlayer);
+        Game game = new Game(whitePlayer, blackPlayer, configuration);
 
         game.printBoard();
         while(true) {

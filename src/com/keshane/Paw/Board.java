@@ -46,6 +46,13 @@ public class Board {
                 board[file][6] = new Piece(Piece.Type.PAWN, Color.BLACK);
             }
         }
+        else if (configuration == Configuration.TEST) {
+            board[0][6] = new Piece(Piece.Type.PAWN, Color.WHITE);
+            board[0][1] = new Piece(Piece.Type.PAWN, Color.BLACK);
+
+            board[1][5] = new Piece(Piece.Type.KING, Color.WHITE);
+            board[1][2] = new Piece(Piece.Type.KING, Color.BLACK);
+        }
     }
 
     /**
@@ -229,6 +236,7 @@ public class Board {
 
     enum Configuration {
         EMPTY,
-        NORMAL
+        NORMAL,
+        TEST,
     }
 }
