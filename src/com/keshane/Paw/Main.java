@@ -7,12 +7,16 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) throws IOException {
-        if (args.length == 3 && args[0].equalsIgnoreCase("-c")) {
-            new RemoteSession(args[1], args[2]);
+        // client
+        if (args.length == 2 && args[0].equalsIgnoreCase("-c")) {
+            Client pawClient = new Client(args[1]);
+            pawClient.startGame();
             return;
         }
+        // server
         else if (args.length == 1 && args[0].equalsIgnoreCase("-s")) {
-            new RemoteSession();
+            Server pawServer = new Server();
+            pawServer.startGame();
             return;
         }
 
