@@ -97,9 +97,9 @@ public class Server {
         Color currentTurn = Color.WHITE;
         while (true) {
             try {
-                System.out.println("Enter move ('q' or 'quit' to exit):");
                 String move;
                 if (currentTurn == color) {
+                    System.out.println("Enter move ('q' or 'quit' to exit):");
                     move = localIn.nextLine();
                 }
                 else {

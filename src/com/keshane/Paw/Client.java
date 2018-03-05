@@ -65,9 +65,9 @@ public class Client {
         Color currentTurn = Color.WHITE;
         while (true) {
             try {
-                System.out.println("Enter move ('q' or 'quit' to exit):");
                 String move;
                 if (currentTurn == color) {
+                    System.out.println("Enter move ('q' or 'quit' to exit):");
                     move = localIn.nextLine();
                 }
                 else {
@@ -83,7 +83,9 @@ public class Client {
                     continue;
                 }
                 game.makeMove(move);
-                remoteOut.println(move);
+                if (currentTurn == color) {
+                    remoteOut.println(move);
+                }
                 game.printBoard();
                 currentTurn = currentTurn.opposite();
             } catch (ParseException exception) {
