@@ -38,17 +38,23 @@ public class Client {
         connectionSocket = new Socket();
         connectionSocket.connect(remoteSocket);
 
-        remoteIn = new Scanner(connectionSocket.getInputStream());
-        blackName = remoteIn.nextLine();
+        System.out.println("Connected to " + ipAddressText + ".");
 
         System.out.println("Enter your name: ");
         localIn = new Scanner(System.in);
         whiteName = localIn.nextLine();
+        System.out.println("Waiting on other player to enter name...");
 
         remoteOut = new PrintWriter(connectionSocket.getOutputStream(), true);
         remoteOut.println(whiteName);
 
-        System.out.println("String successful connection!");
+        remoteIn = new Scanner(connectionSocket.getInputStream());
+        blackName = remoteIn.nextLine();
+
+
+
+
+        System.out.println("Successful connection!");
         System.out.println("white name: " + whiteName);
         System.out.println("black name: " + blackName);
 
@@ -60,7 +66,7 @@ public class Client {
     void startGame() {
         Game game = new Game(whiteName, blackName, Board.Configuration.NORMAL);
 
-        game.printBoard();
+        game.printBoard(color);
 
         Color currentTurn = Color.WHITE;
         while (true) {
@@ -86,7 +92,7 @@ public class Client {
                 if (currentTurn == color) {
                     remoteOut.println(move);
                 }
-                game.printBoard();
+                game.printBoard(color);
                 currentTurn = currentTurn.opposite();
             } catch (ParseException exception) {
                 System.out.println("Invalid move: " + exception.getMessage());

@@ -33,7 +33,8 @@ public class Main {
 
         Game game = new Game(whitePlayer, blackPlayer, configuration);
 
-        game.printBoard();
+        Color currentTurn = Color.WHITE;
+        game.printBoard(currentTurn);
         while(true) {
             try {
                 System.out.println("Enter move ('q' or 'quit' to exit):");
@@ -47,7 +48,9 @@ public class Main {
                     continue;
                 }
                 game.makeMove(move);
-                game.printBoard();
+                // TODO Game should have a method to return current turn color
+                currentTurn = currentTurn.opposite();
+                game.printBoard(currentTurn);
             }
             catch (ParseException exception) {
                 System.out.println("Invalid move: " + exception.getMessage());

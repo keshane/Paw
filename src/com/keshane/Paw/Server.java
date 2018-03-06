@@ -72,8 +72,12 @@ public class Server {
                 SERVER_PORT);
         connectionSocket = serverSocket.accept();
 
+        System.out.println("Connected to " + ((InetSocketAddress) connectionSocket
+                .getRemoteSocketAddress()).getAddress().toString() + ".");
+
         System.out.println("Enter your name: ");
         blackName = localIn.nextLine();
+        System.out.println("Waiting on other player to enter name...");
 
         remoteOut = new PrintWriter(connectionSocket.getOutputStream(), true);
         remoteOut.println(blackName);
@@ -92,7 +96,7 @@ public class Server {
     void startGame() {
         Game game = new Game(whiteName, blackName, Board.Configuration.NORMAL);
 
-        game.printBoard();
+        game.printBoard(color);
 
         Color currentTurn = Color.WHITE;
         while (true) {
@@ -115,8 +119,10 @@ public class Server {
                     continue;
                 }
                 game.makeMove(move);
-                remoteOut.println(move);
-                game.printBoard();
+                if (currentTurn == color) {
+                    remoteOut.println(move);
+                }
+                game.printBoard(color);
                 currentTurn = currentTurn.opposite();
             } catch (ParseException exception) {
                 System.out.println("Invalid move: " + exception.getMessage());

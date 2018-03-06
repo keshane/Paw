@@ -37,10 +37,8 @@ public class Game {
         history.add(move);
     }
 
-    void printBoard() {
-        System.out.println("BLACK: " + blackPlayer.name);
-        System.out.println(board.toString());
-        System.out.println("WHITE: " + whitePlayer.name);
+    void printBoard(Color perspective) {
+        System.out.println(board.toString(perspective));
     }
 
     void printHistory() {

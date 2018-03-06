@@ -24,6 +24,7 @@ public class Board {
 
     /**
      * Construct the board based on the configuration.
+     *
      * @param configuration indicates the initial arrangement of the pieces
      */
     Board(Configuration configuration) {
@@ -71,6 +72,7 @@ public class Board {
      * A copy constructor.
      *
      * Use this to create a copy of another board.
+     *
      * @param oldBoard the Board to create a copy of.
      */
     Board(Board oldBoard) {
@@ -91,6 +93,7 @@ public class Board {
 
     /**
      * Removes the piece at the specified location
+     *
      * @param location a location on the board that has a piece on it
      * @return the piece that was removed
      */
@@ -114,7 +117,8 @@ public class Board {
 
     /**
      * Places the piece at the specified location on the board
-     * @param piece the piece to be placed
+     *
+     * @param piece       the piece to be placed
      * @param destination the location at which to put the piece
      */
     void placePiece(Piece piece, Board.Coordinate destination) {
@@ -141,6 +145,7 @@ public class Board {
 
     /**
      * Gets the piece at the specified file and rank.
+     *
      * @param file the column that the piece is in
      * @param rank the row that the piece is in
      * @return a Piece object or null if there is no piece at the location
@@ -155,6 +160,7 @@ public class Board {
 
     /**
      * Gets the piece at the specified location.
+     *
      * @param location the position of the piece
      * @return a Piece object or null if there is no piece at the location
      */
@@ -164,8 +170,9 @@ public class Board {
 
     /**
      * Finds all the pieces of the specified type and color
+     *
      * @param pieceType the piece type of the piece to search for
-     * @param color the color of the piece to search for
+     * @param color     the color of the piece to search for
      * @return a Set containing the locations of all pieces that fulfill the piece type and color
      * criteria
      */
@@ -187,38 +194,59 @@ public class Board {
 
     /**
      * Creates a human-readable representation of the board.
+     *
      * @return a String formatted to look like a board
      */
     @Override
     public String toString() {
+        return toStringWhite();
+    }
+
+    String toString(Color color) {
+        // TODO extract common lines into one method
+        if (color == Color.WHITE) {
+            return toStringWhite();
+        }
+        else {
+            return toStringBlack();
+        }
+    }
+
+    String toStringWhite() {
+        // TODO clean up unicode characters
         StringBuilder boardVisual = new StringBuilder();
 
         // top of board
-        boardVisual.append("\u250C");
+        boardVisual.append(" \u250C");
         for (int file = 0; file < FILES - 1; file++) {
             boardVisual.append("\u2500\u2500\u2500\u252C");
         }
         boardVisual.append("\u2500\u2500\u2500\u2510\n");
 
         for (int rank = RANKS - 1; rank >= 0; rank--) {
+            // rank coordinates
+            boardVisual.append(rank + 1);
             for (int file = 0; file < FILES; file++) {
                 boardVisual.append("\u2502");
                 Piece piece = getPiece(file, rank);
-                boardVisual.append(" ");
+
+                String squareFillCharacter = (file + rank) % 2 == 0 ? "." : " ";
+                boardVisual.append(squareFillCharacter);
+
                 if (piece == null) {
-                    boardVisual.append(" ");
+                    boardVisual.append(squareFillCharacter);
                 }
                 else {
                     boardVisual.append(piece.toString());
                 }
 
-                boardVisual.append(" ");
+                boardVisual.append(squareFillCharacter);
             }
 
             boardVisual.append("\u2502\n");
 
             if (rank > 0) {
-                boardVisual.append("\u251C");
+                boardVisual.append(" \u251C");
                 for (int file = 0; file < FILES - 1; file++) {
                     boardVisual.append("\u2500\u2500\u2500\u253C");
                 }
@@ -227,11 +255,82 @@ public class Board {
         }
 
         // bottom of board
-        boardVisual.append("\u2514");
+        boardVisual.append(" \u2514");
         for (int file = 0; file < FILES - 1; file++) {
             boardVisual.append("\u2500\u2500\u2500\u2534");
         }
         boardVisual.append("\u2500\u2500\u2500\u2518\n");
+
+        // file coordinates
+        for (int file = 0; file < FILES; file++) {
+            boardVisual.append("   ");
+            boardVisual.append(String.valueOf((char) (file + 'a')));
+        }
+        boardVisual.append("\n");
+
+        return boardVisual.toString();
+    }
+
+    /**
+     * Creates a human-readable representation of the board from black's perspective.
+     *
+     * @return a String formatted to look like a board
+     */
+
+    String toStringBlack() {
+        StringBuilder boardVisual = new StringBuilder();
+
+        // top of board
+        boardVisual.append(" \u250C");
+        for (int file = FILES - 1; file > 0; file--) {
+            boardVisual.append("\u2500\u2500\u2500\u252C");
+        }
+        boardVisual.append("\u2500\u2500\u2500\u2510\n");
+
+        for (int rank = 0; rank < RANKS; rank++) {
+            // rank coordinates
+            boardVisual.append(rank + 1);
+            for (int file = FILES - 1; file >= 0; file--) {
+                boardVisual.append("\u2502");
+                Piece piece = getPiece(file, rank);
+
+                String squareFillCharacter = (file + rank) % 2 == 0 ? "." : " ";
+                boardVisual.append(squareFillCharacter);
+
+                if (piece == null) {
+                    boardVisual.append(squareFillCharacter);
+                }
+                else {
+                    boardVisual.append(piece.toString());
+                }
+
+                boardVisual.append(squareFillCharacter);
+            }
+
+            boardVisual.append("\u2502\n");
+
+            if (rank < RANKS - 1) {
+                boardVisual.append(" \u251C");
+                for (int file = FILES - 1; file > 0; file--) {
+                    boardVisual.append("\u2500\u2500\u2500\u253C");
+                }
+                boardVisual.append("\u2500\u2500\u2500\u2524\n");
+            }
+        }
+
+        // bottom of board
+        boardVisual.append(" \u2514");
+        for (int file = FILES - 1; file > 0; file--) {
+            boardVisual.append("\u2500\u2500\u2500\u2534");
+        }
+        boardVisual.append("\u2500\u2500\u2500\u2518\n");
+
+        // file coordinates
+        for (int file = 0; file < FILES; file++) {
+            boardVisual.append("   ");
+            boardVisual.append(String.valueOf((char) ('h' - file)));
+        }
+        boardVisual.append("\n");
 
         return boardVisual.toString();
     }
@@ -251,6 +350,7 @@ public class Board {
 
         /**
          * Construct a Coordinate object
+         *
          * @param file the column of the location to represent
          * @param rank the row of the location to represent
          */
@@ -262,6 +362,7 @@ public class Board {
         /**
          * Determines whether the location represented by this Coordinate is the same location
          * represented by another Coordinate.
+         *
          * @param second the other Coordinate to compare to
          * @return true if the other Coordinate is equal to this Coordinate, else false
          */
@@ -281,6 +382,7 @@ public class Board {
 
         /**
          * Creates a human-readable representation of this Coordinate
+         *
          * @return a String describing this location
          */
         @Override
