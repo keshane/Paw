@@ -328,7 +328,7 @@ final class Move {
 
             for (int moveNumber = 1; moveNumber <= getFullMoveNumber(); moveNumber++) {
                 stringBuilder.append(moveNumber);
-                stringBuilder.append(": ");
+                stringBuilder.append(". ");
                 stringBuilder.append(String.format("%1$-9s",iterator.next().toString()));
                 if (iterator.hasNext()) {
                     stringBuilder.append(iterator.next().toString());

@@ -24,6 +24,7 @@ class Parser {
         this.notation = notation;
         this.move = new Move.Builder();
         parseFullNotation(this.notation);
+        validateMove();
     }
 
     String getNotation() {
@@ -32,6 +33,14 @@ class Parser {
 
     Move.Builder getMove() {
         return this.move;
+    }
+
+    private void validateMove() throws ParseException {
+        if ((move.getTypes().contains(Move.Type.EN_PASSANT) || move.getTypes().contains(Move.Type
+                .PROMOTION)) && move.getPieceType() != Piece.Type.PAWN) {
+            throw new ParseException("This en passant or promotion can only be performed by a " +
+                    "pawn", 0);
+        }
     }
 
     // TODO consider using StringBuilder
@@ -49,15 +58,16 @@ class Parser {
 
         if (notation.equalsIgnoreCase(Parser.KINGSIDE_CASTLE_OHS) || notation.equalsIgnoreCase(KINGSIDE_CASTLE_ZEROES)) {
             move.addType(Move.Type.KINGSIDE_CASTLE);
+            move.setPieceType(Piece.Type.KING);
             return;
         }
         else if (notation.equalsIgnoreCase(Parser.QUEENSIDE_CASTLE_OHS) || notation.equalsIgnoreCase(Parser.QUEENSIDE_CASTLE_ZEROES)) {
             move.addType(Move.Type.QUEENSIDE_CASTLE);
+            move.setPieceType(Piece.Type.KING);
             return;
         }
         else if (notation.endsWith(Parser.EN_PASSANT)) {
             move.addType(Move.Type.EN_PASSANT);
-            move.setPieceType(Piece.Type.PAWN);
             notation = notation.substring(0, notation.length() - 2);
         }
         else if (notation.endsWith(Piece.Type.QUEEN.getNotation()) ||

@@ -3,16 +3,14 @@ package com.keshane.Paw;
 import java.text.ParseException;
 
 public class Game {
-    private Move.History moveHistory;
+    private final Board board;
 
-    private Board board;
-
-    private Player whitePlayer;
-    private Player blackPlayer;
+    private final Player whitePlayer;
+    private final Player blackPlayer;
 
     private Color currentTurn;
 
-    private Move.History history;
+    private final Move.History history;
 
     Game(String whiteName, String blackName, Board.Configuration configuration) {
         board = new Board(configuration);
@@ -22,7 +20,7 @@ public class Game {
         history = new Move.History();
     }
 
-    void makeMove(String notation) throws ParseException, NoSuchMoveException,
+    public void makeMove(String notation) throws ParseException, NoSuchMoveException,
             AmbiguousNotationException, KingInCheckException {
         Move move;
         if (currentTurn == Color.WHITE) {
@@ -37,12 +35,16 @@ public class Game {
         history.add(move);
     }
 
-    void printBoard(Color perspective) {
+    public void printBoard(Color perspective) {
         System.out.println(board.toString(perspective));
     }
 
-    void printHistory() {
+    public void printHistory() {
         System.out.println(history.toString());
+    }
+
+    public Color getCurrentTurn() {
+        return currentTurn;
     }
 
 

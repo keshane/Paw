@@ -436,7 +436,8 @@ class Player {
                 Move lastMove = moveHistory.peekLast();
                 // check the requirements for an en passant
                 if (lastMove.getPieceType().equals(Piece.Type.PAWN) && lastMove.getDestination()
-                        .rank - lastMove.getSource().rank == -2) {
+                        .rank - lastMove.getSource().rank == -2 && lastMove.getDestination().file
+                        == destination.file) {
                     isValid = true;
                 }
             }

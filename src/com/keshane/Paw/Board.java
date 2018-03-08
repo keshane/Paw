@@ -199,7 +199,7 @@ public class Board {
      */
     @Override
     public String toString() {
-        return toStringWhite();
+        return toString(Color.WHITE);
     }
 
     String toString(Color color) {
@@ -212,7 +212,12 @@ public class Board {
         }
     }
 
-    String toStringWhite() {
+    /**
+     * Creates a human-readable representation of the board from white's perspective.
+     *
+     * @return a String formatted to look like a board
+     */
+    private String toStringWhite() {
         // TODO clean up unicode characters
         StringBuilder boardVisual = new StringBuilder();
 
@@ -276,8 +281,7 @@ public class Board {
      *
      * @return a String formatted to look like a board
      */
-
-    String toStringBlack() {
+    private String toStringBlack() {
         StringBuilder boardVisual = new StringBuilder();
 
         // top of board
